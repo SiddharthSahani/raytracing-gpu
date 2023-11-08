@@ -1,5 +1,6 @@
 
 CXXFLAGS =
+DEFINES  = -DCL_HPP_TARGET_OPENCL_VERSION=300
 INCLUDES = -I . -I external/includes/
 LDFLAGS  = -L external/libs -lopencl -lraylib -lopengl32 -lgdi32 -lwinmm
 
@@ -9,5 +10,9 @@ SOURCES = $(wildcard src/*.cpp)
 TARGET = main.exe
 
 
-$(TARGET): main.cpp $(SOURCES) $(HEADERS)
-	g++ -o $(TARGET) main.cpp $(SOURCES) $(CXXFLAGS) $(INCLUDES) $(LDFLAGS)
+$(TARGET): clean main.cpp $(SOURCES) $(HEADERS)
+	g++ -o $(TARGET) main.cpp $(SOURCES) $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LDFLAGS)
+
+
+clean:
+	rm -rf $(TARGET)
