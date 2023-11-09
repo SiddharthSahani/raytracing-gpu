@@ -59,8 +59,8 @@ void Camera::set_params(const glm::vec3& position, const glm::vec3& direction) {
             glm::vec4 target = inv_projection * glm::vec4(coord.x, coord.y, 1.0f, 1.0f);
             glm::vec3 ray_dir = glm::vec3(inv_view * glm::vec4(glm::normalize(glm::vec3(target) / target.w), 0.0f));
 
-            m_rays[x + y * m_viewport_size.x].origin = glm::vec4(m_position, 1.0f);
-            m_rays[x + y * m_viewport_size.x].direction = glm::vec4(ray_dir, 1.0f);
+            m_rays[x + (m_viewport_size.y-y-1) * m_viewport_size.x].origin = glm::vec4(m_position, 1.0f);
+            m_rays[x + (m_viewport_size.y-y-1) * m_viewport_size.x].direction = glm::vec4(ray_dir, 1.0f);
         }
     }
 }
