@@ -31,6 +31,10 @@ rt::Scene create_test_scene() {
 
     scene.num_spheres = 2;
 
+    scene.sky_color[0] = 210.0f / 255;
+    scene.sky_color[1] = 210.0f / 255;
+    scene.sky_color[2] = 230.0f / 255;
+
     return scene;
 }
 

@@ -18,6 +18,7 @@ struct Sphere {
 struct Scene {
     uint32_t num_spheres;
     Sphere spheres[MAX_SPHERES];
+    glm::vec3 sky_color;
 };
 
 
@@ -31,6 +32,7 @@ struct clSphere {
 struct clScene {
     cl_uint num_spheres;
     clSphere spheres[MAX_SPHERES];
+    cl_float3 sky_color;
 };
 
 
@@ -50,6 +52,7 @@ clScene to_clScene(const Scene& _scene) {
     for (int i = 0; i < scene.num_spheres; i++) {
         scene.spheres[i] = to_clSphere(_scene.spheres[i]);
     }
+    scene.sky_color = {_scene.sky_color[0], _scene.sky_color[1], _scene.sky_color[2], 1.0f};
     return scene;
 }
 

@@ -24,6 +24,7 @@ typedef struct {
 typedef struct {
     uint num_spheres;
     rt_Sphere spheres[MAX_SPHERES];
+    float3 sky_color;
 } rt_Scene;
 
 
@@ -65,8 +66,7 @@ float3 per_pixel(rt_Ray ray, const rt_Scene scene) {
     }
 
     if (record.hit_distance == FLT_MAX) {
-        float3 sky_color = {0, 0, 0};
-        return sky_color;
+        return scene.sky_color;
     } else {
         float3 light_direction = {-1.0f, -1.0f, -1.0f};
         light_direction = normalize(light_direction);
