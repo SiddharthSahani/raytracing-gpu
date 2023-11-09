@@ -26,10 +26,10 @@ typedef struct {
 } rt_Scene;
 
 
-void hit_sphere(const rt_Sphere* sphere, rt_Ray ray, rt_HitRecord* record) {
-    float3 oc = ray.origin - sphere->position;
-    float a = dot(ray.direction, ray.direction);
-    float b = 2.0f * dot(oc, ray.direction);
+void hit_sphere(const rt_Sphere* sphere, const rt_Ray* ray, rt_HitRecord* record) {
+    float3 oc = ray->origin - sphere->position;
+    float a = dot(ray->direction, ray->direction);
+    float b = 2.0f * dot(oc, ray->direction);
     float c = dot(oc, oc) - sphere->radius * sphere->radius;
     float d = b*b - 4*a*c;
 
@@ -40,7 +40,7 @@ void hit_sphere(const rt_Sphere* sphere, rt_Ray ray, rt_HitRecord* record) {
     float t = (-b - sqrt(d)) / (2.0f * a);
 
     if (t < record->hit_distance) {
-        record->world_position = oc + ray.direction * t;
+        record->world_position = oc + ray->direction * t;
         record->world_normal = normalize(record->world_position);
         record->hit_distance = t;
         record->world_position += sphere->position;
@@ -48,22 +48,32 @@ void hit_sphere(const rt_Sphere* sphere, rt_Ray ray, rt_HitRecord* record) {
 }
 
 
-kernel void renderScene(global const rt_Ray* rays, const rt_Scene scene, global float4* out) {
-    size_t i = get_global_id(0);
-
-    const float4 background_color = {0, 1, 1, 1};
-
+float3 per_pixel(rt_Ray ray, const rt_Scene scene) {
     rt_HitRecord record;
     record.hit_distance = FLT_MAX;
 
-    for (int obj_idx = 0; obj_idx < scene.num_spheres; obj_idx++) {
-        hit_sphere(&scene.spheres[obj_idx], rays[i], &record);
+    for (int i = 0; i < scene.num_spheres; i++) {
+        hit_sphere(&scene.spheres[i], &ray, &record);
     }
 
     if (record.hit_distance == FLT_MAX) {
-        out[i] = background_color;
+        float3 sky_color = {0, 0, 0};
+        return sky_color;
     } else {
-        out[i].xyz = record.world_normal;
-        out[i].w = 1.0f;
+        float3 light_direction = {-1.0f, -1.0f, -1.0f};
+        light_direction = normalize(light_direction);
+        float light_intensity = max(0.0f, dot(record.world_normal, -light_direction));
+
+        float3 sphere_color = {1, 0, 1};
+        sphere_color *= light_intensity;
+        return sphere_color;
     }
+}
+
+
+kernel void renderScene(global const rt_Ray* rays, const rt_Scene scene, global float4* out) {
+    size_t i = get_global_id(0);
+
+    out[i].xyz = per_pixel(rays[i], scene);
+    out[i].w = 1.0f;
 }
