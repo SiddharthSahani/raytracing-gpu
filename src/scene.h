@@ -9,8 +9,9 @@
 namespace rt {
 
 struct Sphere {
-    glm::vec4 position;
+    glm::vec3 position;
     float radius;
+    glm::vec3 color;
 };
 
 
@@ -23,6 +24,7 @@ struct Scene {
 struct clSphere {
     cl_float3 position;
     cl_float radius;
+    cl_float3 color;
 };
 
 
@@ -36,6 +38,7 @@ clSphere to_clSphere(const Sphere& _sphere) {
     clSphere sphere;
     sphere.position = {_sphere.position[0], _sphere.position[1], _sphere.position[2], 1.0f};
     sphere.radius = _sphere.radius;
+    sphere.color = {_sphere.color[0], _sphere.color[1], _sphere.color[2], 1.0f};
     return sphere;
 } 
 

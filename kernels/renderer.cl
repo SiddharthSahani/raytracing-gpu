@@ -2,6 +2,7 @@
 typedef struct {
     float3 position;
     float radius;
+    float3 color;
 } rt_Sphere;
 
 
@@ -26,7 +27,7 @@ typedef struct {
 } rt_Scene;
 
 
-void hit_sphere(const rt_Sphere* sphere, const rt_Ray* ray, rt_HitRecord* record) {
+bool hit_sphere(const rt_Sphere* sphere, const rt_Ray* ray, rt_HitRecord* record) {
     float3 oc = ray->origin - sphere->position;
     float a = dot(ray->direction, ray->direction);
     float b = 2.0f * dot(oc, ray->direction);
@@ -34,7 +35,7 @@ void hit_sphere(const rt_Sphere* sphere, const rt_Ray* ray, rt_HitRecord* record
     float d = b*b - 4*a*c;
 
     if (d < 0.0f) {
-        return;
+        return false;
     }
 
     float t = (-b - sqrt(d)) / (2.0f * a);
@@ -44,7 +45,10 @@ void hit_sphere(const rt_Sphere* sphere, const rt_Ray* ray, rt_HitRecord* record
         record->world_normal = normalize(record->world_position);
         record->hit_distance = t;
         record->world_position += sphere->position;
+        return true;
     }
+
+    return false;
 }
 
 
@@ -52,8 +56,12 @@ float3 per_pixel(rt_Ray ray, const rt_Scene scene) {
     rt_HitRecord record;
     record.hit_distance = FLT_MAX;
 
+    float3 sphere_color;
+
     for (int i = 0; i < scene.num_spheres; i++) {
-        hit_sphere(&scene.spheres[i], &ray, &record);
+        if (hit_sphere(&scene.spheres[i], &ray, &record)) {
+            sphere_color = scene.spheres[i].color;
+        }
     }
 
     if (record.hit_distance == FLT_MAX) {
@@ -64,7 +72,6 @@ float3 per_pixel(rt_Ray ray, const rt_Scene scene) {
         light_direction = normalize(light_direction);
         float light_intensity = max(0.0f, dot(record.world_normal, -light_direction));
 
-        float3 sphere_color = {1, 0, 1};
         sphere_color *= light_intensity;
         return sphere_color;
     }

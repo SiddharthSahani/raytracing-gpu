@@ -16,14 +16,16 @@ rt::Scene create_test_scene() {
 
     {
         rt::Sphere sphere;
-        sphere.position = {0, 0, 0, 1};
+        sphere.position = {0, 0, 0};
         sphere.radius = 1.0f;
+        sphere.color = {0.2f, 0.9f, 0.8f};
         scene.spheres[0] = sphere;
     }
     {
         rt::Sphere sphere;
-        sphere.position = {0, -6, 0, 1};
+        sphere.position = {0, -6, 0};
         sphere.radius = 5.0f;
+        sphere.color = {1.0f, 0.0f, 1.0f};
         scene.spheres[1] = sphere;
     }
 
