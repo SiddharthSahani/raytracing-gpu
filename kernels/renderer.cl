@@ -18,13 +18,15 @@ typedef struct {
 } rt_HitRecord;
 
 
-constant rt_Sphere spheres[] = {
-    {{0, 0, 0}, 1},
-    {{0, -6, 0}, 5}
-};
+#define MAX_SPHERES 5
+
+typedef struct {
+    uint num_spheres;
+    rt_Sphere spheres[MAX_SPHERES];
+} rt_Scene;
 
 
-void hit_sphere(constant rt_Sphere* sphere, rt_Ray ray, rt_HitRecord* record) {
+void hit_sphere(const rt_Sphere* sphere, rt_Ray ray, rt_HitRecord* record) {
     float3 oc = ray.origin - sphere->position;
     float a = dot(ray.direction, ray.direction);
     float b = 2.0f * dot(oc, ray.direction);
@@ -46,20 +48,16 @@ void hit_sphere(constant rt_Sphere* sphere, rt_Ray ray, rt_HitRecord* record) {
 }
 
 
-kernel void renderScene(global const rt_Ray* rays, global float4* out) {
+kernel void renderScene(global const rt_Ray* rays, const rt_Scene scene, global float4* out) {
     size_t i = get_global_id(0);
-    if (i == 0) {
-        printf("Sphere[0] = {%f, %f}\n", spheres[0].position, spheres[0].radius);
-        printf("Sphere[1] = {%f, %f}\n", spheres[1].position, spheres[1].radius);
-    }
 
     const float4 background_color = {0, 1, 1, 1};
 
     rt_HitRecord record;
     record.hit_distance = FLT_MAX;
 
-    for (int obj_idx = 0; obj_idx < 2; obj_idx++) {
-        hit_sphere(&spheres[obj_idx], rays[i], &record);
+    for (int obj_idx = 0; obj_idx < scene.num_spheres; obj_idx++) {
+        hit_sphere(&scene.spheres[obj_idx], rays[i], &record);
     }
 
     if (record.hit_distance == FLT_MAX) {

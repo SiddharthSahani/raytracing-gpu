@@ -1,6 +1,7 @@
 
-#include "src/camera.h"
 #include "src/cl_utils.h"
+#include "src/camera.h"
+#include "src/scene.h"
 #include <raylib/raylib.h>
 
 
@@ -10,19 +11,45 @@
 #define IMAGE_HEIGHT (720/2)
 
 
+rt::Scene create_test_scene() {
+    rt::Scene scene;
+
+    {
+        rt::Sphere sphere;
+        sphere.position = {0, 0, 0, 1};
+        sphere.radius = 1.0f;
+        scene.spheres[0] = sphere;
+    }
+    {
+        rt::Sphere sphere;
+        sphere.position = {0, -6, 0, 1};
+        sphere.radius = 5.0f;
+        scene.spheres[1] = sphere;
+    }
+
+    scene.num_spheres = 2;
+
+    return scene;
+}
+
+
 void render_test_scene(const cl::Context& context, const cl::CommandQueue& queue, cl::Program& program, std::vector<glm::vec4>& pixels_h) {
     rt::Camera camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT});
     camera.set_params({0, 0, 6}, {0, 0, -1});
-    std::vector<rt::Ray> rays_h = camera.get_rays();
+    std::vector<rt::clRay> rays_h = camera.get_rays();
 
-    cl::Buffer rays_d(context, CL_MEM_READ_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(rt::Ray));
+    rt::Scene _scene = create_test_scene();
+    rt::clScene scene = rt::to_clScene(_scene);
+
+    cl::Buffer rays_d(context, CL_MEM_READ_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(rt::clRay));
     cl::Buffer pixels_d(context, CL_MEM_WRITE_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(glm::vec4));
 
-    queue.enqueueWriteBuffer(rays_d, true, 0, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(rt::Ray), rays_h.data());
+    queue.enqueueWriteBuffer(rays_d, true, 0, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(rt::clRay), rays_h.data());
 
     cl::Kernel kernel(program, "renderScene");
     kernel.setArg(0, rays_d);
-    kernel.setArg(1, pixels_d);
+    kernel.setArg(1, sizeof(rt::clScene), &scene);
+    kernel.setArg(2, pixels_d);
 
     queue.enqueueNDRangeKernel(
         kernel,
