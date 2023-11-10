@@ -98,10 +98,18 @@ float3 per_pixel(rt_Ray ray, const rt_Scene scene, uint* rng_seed) {
 
 
 kernel void renderScene(global const rt_Ray* rays, const rt_Scene scene, global float4* out) {
-    size_t i = get_global_id(0);
+    size_t pixel_idx = get_global_id(0);
 
-    uint rng_seed = i;
+    uint rng_seed = pixel_idx;
 
-    out[i].xyz = per_pixel(rays[i], scene, &rng_seed);
-    out[i].w = 1.0f;
+    float3 accumulated_color = {0.0f, 0.0f, 0.0f};
+    
+    const int frames = 100;
+    for (int frame_idx = 0; frame_idx < frames; frame_idx++) {
+        rng_seed += frame_idx * 32421;
+        accumulated_color += clamp(per_pixel(rays[pixel_idx], scene, &rng_seed), 0.0f, 1.0f);
+    }
+
+    out[pixel_idx].xyz = accumulated_color / frames;
+    out[pixel_idx].w = 1.0f;
 }
