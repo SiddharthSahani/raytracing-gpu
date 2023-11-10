@@ -1,4 +1,7 @@
 
+#include "kernels/random.h"
+
+
 typedef struct {
     float3 position;
     float radius;
@@ -74,6 +77,7 @@ float3 per_pixel(rt_Ray ray, const rt_Scene scene, uint* rng_seed) {
 
     const int bounces = 10;
     for (int i = 0; i < bounces; i++) {
+        rng_seed += i * i * i;
         rt_HitRecord record = trace_ray(&ray, &scene);
 
         if (record.hit_distance == FLT_MAX) {
@@ -85,8 +89,8 @@ float3 per_pixel(rt_Ray ray, const rt_Scene scene, uint* rng_seed) {
 
         contribution *= sphere->color;
         
-        ray.origin = record.world_position;
-        ray.direction = record.world_normal;
+        ray.origin = record.world_position + record.world_normal * 0.001f;
+        ray.direction = normalize(record.world_normal + random_float3(rng_seed));
     }
 
     return light;
