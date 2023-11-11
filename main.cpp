@@ -39,24 +39,33 @@ rt::Scene create_test_scene() {
 }
 
 
-void render_test_scene(const cl::Context& context, const cl::CommandQueue& queue, cl::Program& program, std::vector<glm::vec4>& pixels_h) {
+void init_render(
+    const cl::Context& context, const cl::CommandQueue& queue, const cl::Program& program, cl::Kernel& kernel,
+    cl::Buffer& rays_d, cl::Buffer& pixels_d
+) {
     rt::Camera camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT});
     camera.set_params({0, 0, 6}, {0, 0, -1});
     std::vector<rt::clRay> rays_h = camera.get_rays();
 
-    rt::Scene _scene = create_test_scene();
-    rt::clScene scene = rt::to_clScene(_scene);
-
-    cl::Buffer rays_d(context, CL_MEM_READ_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(rt::clRay));
-    cl::Buffer pixels_d(context, CL_MEM_WRITE_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(glm::vec4));
+    rays_d = cl::Buffer(context, CL_MEM_READ_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(rt::clRay));
+    pixels_d = cl::Buffer(context, CL_MEM_WRITE_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(glm::vec4));
 
     queue.enqueueWriteBuffer(rays_d, true, 0, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(rt::clRay), rays_h.data());
 
-    cl::Kernel kernel(program, "renderScene");
+    rt::Scene _scene = create_test_scene();
+    rt::clScene scene = rt::to_clScene(_scene);
+
+    kernel = cl::Kernel(program, "renderScene");
     kernel.setArg(0, rays_d);
     kernel.setArg(1, sizeof(rt::clScene), &scene);
     kernel.setArg(2, pixels_d);
+}
 
+
+void render_test_scene(
+    const cl::CommandQueue& queue, const cl::Kernel& kernel,
+    const cl::Buffer& pixels_d, std::vector<glm::vec4>& pixels_h
+) {
     queue.enqueueNDRangeKernel(
         kernel,
         cl::NullRange,
@@ -86,7 +95,10 @@ int main() {
     SetTargetFPS(30);
     
     std::vector<glm::vec4> out(IMAGE_WIDTH*IMAGE_HEIGHT, glm::vec4(0, 1, 0, 1));
-    render_test_scene(context, queue, program, out);
+    cl::Kernel kernel;
+    cl::Buffer rays_d, pixels_d;
+    init_render(context, queue, program, kernel, rays_d, pixels_d);
+    render_test_scene(queue, kernel, pixels_d, out);
 
     Image image = GenImageGradientRadial(IMAGE_WIDTH, IMAGE_HEIGHT, 0.1f, RAYWHITE, BLACK);
     ImageFormat(&image, PIXELFORMAT_UNCOMPRESSED_R32G32B32A32);
