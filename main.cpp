@@ -3,6 +3,7 @@
 #include "src/camera.h"
 #include "src/scene.h"
 #include <raylib/raylib.h>
+#include <chrono>
 
 
 #define WINDOW_WIDTH 1280
@@ -43,22 +44,28 @@ void init_render(
     const cl::Context& context, const cl::CommandQueue& queue, const cl::Program& program, cl::Kernel& kernel,
     cl::Buffer& rays_d, cl::Buffer& pixels_d
 ) {
-    rt::Camera camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT});
-    camera.set_params({0, 0, 6}, {0, 0, -1});
-    std::vector<rt::clRay> rays_h = camera.get_rays();
+    auto start = std::chrono::high_resolution_clock::now();
+    {
+        rt::Camera camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT});
+        camera.set_params({0, 0, 6}, {0, 0, -1});
+        std::vector<rt::clRay> rays_h = camera.get_rays();
 
-    rays_d = cl::Buffer(context, CL_MEM_READ_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(rt::clRay));
-    pixels_d = cl::Buffer(context, CL_MEM_WRITE_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(glm::vec4));
+        rays_d = cl::Buffer(context, CL_MEM_READ_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(rt::clRay));
+        pixels_d = cl::Buffer(context, CL_MEM_WRITE_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(glm::vec4));
 
-    queue.enqueueWriteBuffer(rays_d, true, 0, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(rt::clRay), rays_h.data());
+        queue.enqueueWriteBuffer(rays_d, true, 0, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(rt::clRay), rays_h.data());
 
-    rt::Scene _scene = create_test_scene();
-    rt::clScene scene = rt::to_clScene(_scene);
+        rt::Scene _scene = create_test_scene();
+        rt::clScene scene = rt::to_clScene(_scene);
 
-    kernel = cl::Kernel(program, "renderScene");
-    kernel.setArg(0, rays_d);
-    kernel.setArg(1, sizeof(rt::clScene), &scene);
-    kernel.setArg(2, pixels_d);
+        kernel = cl::Kernel(program, "renderScene");
+        kernel.setArg(0, rays_d);
+        kernel.setArg(1, sizeof(rt::clScene), &scene);
+        kernel.setArg(2, pixels_d);
+    }
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto tt_ns = (stop - start).count();
+    printf("init_render took %f secs (%f ms)\n", tt_ns / 1e9, tt_ns / 1e6);
 }
 
 
@@ -66,15 +73,21 @@ void render_test_scene(
     const cl::CommandQueue& queue, const cl::Kernel& kernel,
     const cl::Buffer& pixels_d, std::vector<glm::vec4>& pixels_h
 ) {
-    queue.enqueueNDRangeKernel(
-        kernel,
-        cl::NullRange,
-        cl::NDRange(IMAGE_WIDTH * IMAGE_HEIGHT),
-        cl::NullRange
-    );
-    queue.finish();
+    auto start = std::chrono::high_resolution_clock::now();
+    {
+        queue.enqueueNDRangeKernel(
+            kernel,
+            cl::NullRange,
+            cl::NDRange(IMAGE_WIDTH * IMAGE_HEIGHT),
+            cl::NullRange
+        );
+        queue.finish();
 
-    queue.enqueueReadBuffer(pixels_d, true, 0, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(glm::vec4), pixels_h.data());
+        queue.enqueueReadBuffer(pixels_d, true, 0, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(glm::vec4), pixels_h.data());
+    }
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto tt_ns = (stop - start).count();
+    printf("render_test_scene took %f secs (%f ms)\n", tt_ns / 1e9, tt_ns / 1e6);
 }
 
 
