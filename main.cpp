@@ -42,26 +42,28 @@ rt::Scene create_test_scene() {
 
 void init_render(
     const cl::Context& context, const cl::CommandQueue& queue, const cl::Program& program, cl::Kernel& kernel,
-    cl::Buffer& rays_d, cl::Buffer& pixels_d
+    cl::Buffer& ray_dirs_d, cl::Buffer& pixels_d
 ) {
     auto start = std::chrono::high_resolution_clock::now();
     {
         rt::Camera camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT});
         camera.set_params({0, 0, 6}, {0, 0, -1});
-        std::vector<rt::clRay> rays_h = camera.get_rays();
+        std::vector<cl_float3> ray_dirs_h = camera.get_ray_directions();
+        cl_float3 camera_position = {0, 0, 6, 0};
 
-        rays_d = cl::Buffer(context, CL_MEM_READ_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(rt::clRay));
-        pixels_d = cl::Buffer(context, CL_MEM_WRITE_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(glm::vec4));
+        ray_dirs_d = cl::Buffer(context, CL_MEM_READ_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(cl_float3));
+        pixels_d = cl::Buffer(context, CL_MEM_WRITE_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(cl_float4));
 
-        queue.enqueueWriteBuffer(rays_d, true, 0, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(rt::clRay), rays_h.data());
+        queue.enqueueWriteBuffer(ray_dirs_d, true, 0, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(cl_float3), ray_dirs_h.data());
 
         rt::Scene _scene = create_test_scene();
         rt::clScene scene = rt::to_clScene(_scene);
 
         kernel = cl::Kernel(program, "renderScene");
-        kernel.setArg(0, rays_d);
-        kernel.setArg(1, sizeof(rt::clScene), &scene);
-        kernel.setArg(2, pixels_d);
+        kernel.setArg(0, sizeof(cl_float3), &camera_position);
+        kernel.setArg(1, ray_dirs_d);
+        kernel.setArg(2, sizeof(rt::clScene), &scene);
+        kernel.setArg(3, pixels_d);
     }
     auto stop = std::chrono::high_resolution_clock::now();
     auto tt_ns = (stop - start).count();
@@ -109,8 +111,8 @@ int main() {
     
     std::vector<glm::vec4> out(IMAGE_WIDTH*IMAGE_HEIGHT, glm::vec4(0, 1, 0, 1));
     cl::Kernel kernel;
-    cl::Buffer rays_d, pixels_d;
-    init_render(context, queue, program, kernel, rays_d, pixels_d);
+    cl::Buffer ray_dirs_d, pixels_d;
+    init_render(context, queue, program, kernel, ray_dirs_d, pixels_d);
     render_test_scene(queue, kernel, pixels_d, out);
 
     Image image = GenImageGradientRadial(IMAGE_WIDTH, IMAGE_HEIGHT, 0.1f, RAYWHITE, BLACK);

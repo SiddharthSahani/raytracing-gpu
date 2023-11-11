@@ -14,14 +14,14 @@ class Camera {
     public:
         Camera(float fov, const glm::vec2& viewport_size);
         void set_params(const glm::vec3& position, const glm::vec3& direction);
-        const std::vector<rt::clRay>& get_rays() const { return m_rays; }
+        const std::vector<cl_float3>& get_ray_directions() const { return m_ray_directions; }
 
     private:
         float m_fov;
         glm::vec2 m_viewport_size;
         glm::vec3 m_position;
         glm::vec3 m_direction;
-        std::vector<rt::clRay> m_rays;
+        std::vector<cl_float3> m_ray_directions;
 
 };
 
@@ -32,7 +32,7 @@ Camera::Camera(float fov, const glm::vec2& viewport_size) {
     m_position = {0, 0, 6};
     m_direction = {0, 0, -1};
 
-    m_rays.resize(viewport_size.x * viewport_size.y);
+    m_ray_directions.resize(viewport_size.x * viewport_size.y);
     set_params(m_position, m_direction);
 }
 
@@ -59,8 +59,7 @@ void Camera::set_params(const glm::vec3& position, const glm::vec3& direction) {
             glm::vec4 target = inv_projection * glm::vec4(coord.x, coord.y, 1.0f, 1.0f);
             glm::vec3 ray_dir = glm::vec3(inv_view * glm::vec4(glm::normalize(glm::vec3(target) / target.w), 0.0f));
 
-            rt::Ray ray = {m_position, ray_dir};
-            m_rays[x + (m_viewport_size.y-y-1) * m_viewport_size.x] = rt::to_clRay(ray);
+            m_ray_directions[x + (m_viewport_size.y-y-1) * m_viewport_size.x] = {ray_dir.x, ray_dir.y, ray_dir.z, 0.0f};
         }
     }
 }
