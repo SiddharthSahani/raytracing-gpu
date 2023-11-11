@@ -32,7 +32,7 @@ typedef struct {
 } rt_Scene;
 
 
-bool hit_sphere(const rt_Sphere* sphere, const rt_Ray* ray, rt_HitRecord* record) {
+bool hit_sphere(local const rt_Sphere* sphere, const rt_Ray* ray, rt_HitRecord* record) {
     float3 oc = ray->origin - sphere->position;
     float a = dot(ray->direction, ray->direction);
     float b = 2.0f * dot(oc, ray->direction);
@@ -57,7 +57,7 @@ bool hit_sphere(const rt_Sphere* sphere, const rt_Ray* ray, rt_HitRecord* record
 }
 
 
-rt_HitRecord trace_ray(const rt_Ray* ray, const rt_Scene* scene) {
+rt_HitRecord trace_ray(const rt_Ray* ray, local const rt_Scene* scene) {
     rt_HitRecord record;
     record.hit_distance = FLT_MAX;
 
@@ -71,21 +71,21 @@ rt_HitRecord trace_ray(const rt_Ray* ray, const rt_Scene* scene) {
 }
 
 
-float3 per_pixel(rt_Ray ray, const rt_Scene scene, uint* rng_seed) {
+float3 per_pixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed) {
     float3 light = {0.0f, 0.0f, 0.0f};
     float3 contribution = {1.0f, 1.0f, 1.0f};
 
     const int bounces = 10;
     for (int i = 0; i < bounces; i++) {
         rng_seed += i * i * i;
-        rt_HitRecord record = trace_ray(&ray, &scene);
+        rt_HitRecord record = trace_ray(&ray, scene);
 
         if (record.hit_distance == FLT_MAX) {
-            light += scene.sky_color * contribution;
+            light += scene->sky_color * contribution;
             break;
         }
 
-        const rt_Sphere* sphere = &scene.spheres[record.sphere_idx];
+        local const rt_Sphere* sphere = &scene->spheres[record.sphere_idx];
 
         contribution *= sphere->color;
         
@@ -97,7 +97,13 @@ float3 per_pixel(rt_Ray ray, const rt_Scene scene, uint* rng_seed) {
 }
 
 
-kernel void renderScene(const float3 camera_position, global const float3* ray_directions, const rt_Scene scene, global float4* out) {
+kernel void renderScene(const float3 camera_position, global const float3* ray_directions, const rt_Scene _scene, global float4* out) {
+    local rt_Scene scene;
+    if (get_local_id(0) == 0) {
+        scene = _scene;
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+
     size_t pixel_idx = get_global_id(0);
 
     uint rng_seed = pixel_idx;
@@ -111,7 +117,7 @@ kernel void renderScene(const float3 camera_position, global const float3* ray_d
     const int frames = 100;
     for (int frame_idx = 0; frame_idx < frames; frame_idx++) {
         rng_seed += frame_idx * 32421;
-        accumulated_color += clamp(per_pixel(ray, scene, &rng_seed), 0.0f, 1.0f);
+        accumulated_color += clamp(per_pixel(ray, &scene, &rng_seed), 0.0f, 1.0f);
     }
 
     out[pixel_idx].xyz = accumulated_color / frames;
