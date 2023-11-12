@@ -47,7 +47,7 @@ void init_render(
     auto start = std::chrono::high_resolution_clock::now();
     {
         rt::Camera camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT});
-        camera.set_params({0, 0, 6}, {0, 0, -1});
+        camera.calculate_ray_directions({0, 0, 6}, {0, 0, -1});
         std::vector<cl_float3> ray_dirs_h = camera.get_ray_directions();
         cl_float3 camera_position = {0, 0, 6, 0};
 
