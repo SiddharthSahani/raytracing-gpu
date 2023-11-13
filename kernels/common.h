@@ -17,4 +17,9 @@ typedef struct {
 } rt_HitRecord;
 
 
+typedef struct {
+    float3 color;
+} rt_Material;
+
+
 #endif

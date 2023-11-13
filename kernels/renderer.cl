@@ -4,12 +4,14 @@
 #include "kernels/random.h"
 
 #define MAX_SPHERES 5
+#define MAX_MATERIALS 5
 
 
 typedef struct {
     uint num_spheres;
-    rt_Sphere spheres[MAX_SPHERES];
     float3 sky_color;
+    rt_Sphere spheres[MAX_SPHERES];
+    rt_Material materials[MAX_MATERIALS];
 } rt_Scene;
 
 
@@ -42,8 +44,9 @@ float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed) {
         }
 
         local const rt_Sphere* sphere = &scene->spheres[record.sphere_idx];
+        local const rt_Material* material = &scene->materials[sphere->material_idx];
 
-        contribution *= sphere->color;
+        contribution *= material->color;
 
         ray.origin = record.world_position + record.world_normal * 0.001f;
         ray.direction = normalize(record.world_normal + randomFloat3(rng_seed));

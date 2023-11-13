@@ -8,7 +8,7 @@
 typedef struct {
     float3 position;
     float radius;
-    float3 color;
+    uint material_idx;
 } rt_Sphere;
 
 

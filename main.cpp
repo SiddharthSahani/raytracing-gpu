@@ -1,7 +1,7 @@
 
 #include "src/cl_utils.h"
 #include "src/camera.h"
-#include "src/scene.h"
+#include "src/rt_objects.h"
 #include <raylib/raylib.h>
 #include <chrono>
 
@@ -19,15 +19,26 @@ rt::Scene create_test_scene() {
         rt::Sphere sphere;
         sphere.position = {0, 0, 0};
         sphere.radius = 1.0f;
-        sphere.color = {0.2f, 0.9f, 0.8f};
+        sphere.material_idx = 0;
         scene.spheres[0] = sphere;
     }
     {
         rt::Sphere sphere;
         sphere.position = {0, -6, 0};
         sphere.radius = 5.0f;
-        sphere.color = {1.0f, 0.0f, 1.0f};
+        sphere.material_idx = 1;
         scene.spheres[1] = sphere;
+    }
+
+    {
+        rt::Material material;
+        material.color = {0.2f, 0.9f, 0.8f};
+        scene.materials[0] = material;
+    }
+    {
+        rt::Material material;
+        material.color = {1.0f, 0.0f, 1.0f};
+        scene.materials[1] = material;
     }
 
     scene.num_spheres = 2;
