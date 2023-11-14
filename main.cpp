@@ -84,7 +84,7 @@ int main() {
     }
 
     SetTraceLogLevel(LOG_WARNING);
-    InitWindow(1280, 720, "OpenCl with raylib");
+    InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "OpenCl with raylib");
     SetTargetFPS(30);
     
     std::vector<glm::vec4> out(IMAGE_WIDTH*IMAGE_HEIGHT, glm::vec4(0, 1, 0, 1));
