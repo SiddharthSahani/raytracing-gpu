@@ -10,6 +10,12 @@
 
 namespace rt {
 
+struct RendererConfig {
+    cl_uint samples;
+    cl_uint bounces;
+};
+
+
 struct Sphere {
     glm::vec3 position;
     float radius;

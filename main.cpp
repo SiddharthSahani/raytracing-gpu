@@ -23,6 +23,11 @@ void init_render(
         std::vector<cl_float3> ray_dirs_h = camera.get_ray_directions();
         cl_float3 camera_position = {0, 0, 6, 0};
 
+        rt::RendererConfig config = {
+            .samples = 32,
+            .bounces = 5
+        };
+
         ray_dirs_d = cl::Buffer(context, CL_MEM_READ_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(cl_float3));
         pixels_d = cl::Buffer(context, CL_MEM_WRITE_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(cl_float4));
 
@@ -38,7 +43,8 @@ void init_render(
         kernel.setArg(0, sizeof(cl_float3), &camera_position);
         kernel.setArg(1, ray_dirs_d);
         // kernel.setArg(2, sizeof(rt::clScene), &scene);
-        kernel.setArg(3, pixels_d);
+        kernel.setArg(3, sizeof(rt::RendererConfig), &config);
+        kernel.setArg(4, pixels_d);
     }
     auto stop = std::chrono::high_resolution_clock::now();
     auto tt_ns = (stop - start).count();

@@ -15,6 +15,12 @@ typedef struct {
 } rt_Scene;
 
 
+typedef struct {
+    uint samples;
+    uint bounces;
+} rt_Config;
+
+
 rt_HitRecord traceRay(const rt_Ray* ray, local const rt_Scene* scene) {
     rt_HitRecord record;
     record.hit_distance = FLT_MAX;
@@ -29,12 +35,11 @@ rt_HitRecord traceRay(const rt_Ray* ray, local const rt_Scene* scene) {
 }
 
 
-float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed) {
+float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed, local const rt_Config* config) {
     float3 light = {0.0f, 0.0f, 0.0f};
     float3 contribution = {1.0f, 1.0f, 1.0f};
 
-    const int bounces = 10;
-    for (int i = 0; i < bounces; i++) {
+    for (int i = 0; i < config->bounces; i++) {
         rng_seed += i * i * i;
         rt_HitRecord record = traceRay(&ray, scene);
 
@@ -56,10 +61,16 @@ float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed) {
 }
 
 
-kernel void renderScene(const float3 camera_position, global const float3* ray_directions, const rt_Scene _scene, global float4* out) {
+kernel void renderScene(
+    const float3 camera_position, global const float3* ray_directions,
+    const rt_Scene _scene, const rt_Config _config,
+    global float4* out
+) {
     local rt_Scene scene;
+    local rt_Config config;
     if (get_local_id(0) == 0) {
         scene = _scene;
+        config = _config;
     }
     barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -73,10 +84,10 @@ kernel void renderScene(const float3 camera_position, global const float3* ray_d
     ray.origin = camera_position;
     ray.direction = ray_directions[pixel_idx];
 
-    const int frames = 100;
+    const int frames = config.samples;
     for (int frame_idx = 0; frame_idx < frames; frame_idx++) {
         rng_seed += frame_idx * 32421;
-        accumulated_color += clamp(perPixel(ray, &scene, &rng_seed), 0.0f, 1.0f);
+        accumulated_color += clamp(perPixel(ray, &scene, &rng_seed, &config), 0.0f, 1.0f);
     }
 
     out[pixel_idx].xyz = accumulated_color / frames;
