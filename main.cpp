@@ -1,7 +1,7 @@
 
 #include "src/cl_utils.h"
 #include "src/camera.h"
-#include "src/rt_objects.h"
+#include "src/test_scenes.h"
 #include <raylib/raylib.h>
 #include <chrono>
 
@@ -12,48 +12,9 @@
 #define IMAGE_HEIGHT (720/2)
 
 
-rt::Scene create_test_scene() {
-    rt::Scene scene;
-
-    {
-        rt::Sphere sphere;
-        sphere.position = {0, 0, 0};
-        sphere.radius = 1.0f;
-        sphere.material_idx = 0;
-        scene.spheres[0] = sphere;
-    }
-    {
-        rt::Sphere sphere;
-        sphere.position = {0, -6, 0};
-        sphere.radius = 5.0f;
-        sphere.material_idx = 1;
-        scene.spheres[1] = sphere;
-    }
-
-    {
-        rt::Material material;
-        material.color = {0.2f, 0.9f, 0.8f};
-        scene.materials[0] = material;
-    }
-    {
-        rt::Material material;
-        material.color = {1.0f, 0.0f, 1.0f};
-        scene.materials[1] = material;
-    }
-
-    scene.num_spheres = 2;
-
-    scene.sky_color[0] = 210.0f / 255;
-    scene.sky_color[1] = 210.0f / 255;
-    scene.sky_color[2] = 230.0f / 255;
-
-    return scene;
-}
-
-
 void init_render(
     const cl::Context& context, const cl::CommandQueue& queue, const cl::Program& program, cl::Kernel& kernel,
-    cl::Buffer& ray_dirs_d, cl::Buffer& pixels_d
+    cl::Buffer& ray_dirs_d, cl::Buffer& pixels_d, std::vector<rt::clScene>& scenes
 ) {
     auto start = std::chrono::high_resolution_clock::now();
     {
@@ -67,13 +28,16 @@ void init_render(
 
         queue.enqueueWriteBuffer(ray_dirs_d, true, 0, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(cl_float3), ray_dirs_h.data());
 
-        rt::Scene _scene = create_test_scene();
-        rt::clScene scene = rt::to_clScene(_scene);
+        scenes = {
+            create_scene_1(),
+            create_scene_2(),
+            create_scene_3()
+        };
 
         kernel = cl::Kernel(program, "renderScene");
         kernel.setArg(0, sizeof(cl_float3), &camera_position);
         kernel.setArg(1, ray_dirs_d);
-        kernel.setArg(2, sizeof(rt::clScene), &scene);
+        // kernel.setArg(2, sizeof(rt::clScene), &scene);
         kernel.setArg(3, pixels_d);
     }
     auto stop = std::chrono::high_resolution_clock::now();
@@ -83,11 +47,14 @@ void init_render(
 
 
 void render_test_scene(
-    const cl::CommandQueue& queue, const cl::Kernel& kernel,
+    const cl::CommandQueue& queue, cl::Kernel& kernel,
+    const rt::clScene& scene,
     const cl::Buffer& pixels_d, std::vector<glm::vec4>& pixels_h
 ) {
     auto start = std::chrono::high_resolution_clock::now();
     {
+        kernel.setArg(2, sizeof(rt::clScene), &scene);
+
         queue.enqueueNDRangeKernel(
             kernel,
             cl::NullRange,
@@ -123,8 +90,11 @@ int main() {
     std::vector<glm::vec4> out(IMAGE_WIDTH*IMAGE_HEIGHT, glm::vec4(0, 1, 0, 1));
     cl::Kernel kernel;
     cl::Buffer ray_dirs_d, pixels_d;
-    init_render(context, queue, program, kernel, ray_dirs_d, pixels_d);
-    render_test_scene(queue, kernel, pixels_d, out);
+    std::vector<rt::clScene> scenes;
+    init_render(context, queue, program, kernel, ray_dirs_d, pixels_d, scenes);
+
+    int cur_scene_idx = 0;
+    render_test_scene(queue, kernel, scenes[cur_scene_idx], pixels_d, out);
 
     Image image = GenImageGradientRadial(IMAGE_WIDTH, IMAGE_HEIGHT, 0.1f, RAYWHITE, BLACK);
     ImageFormat(&image, PIXELFORMAT_UNCOMPRESSED_R32G32B32A32);
@@ -134,6 +104,19 @@ int main() {
     UpdateTexture(texture, out.data());
 
     while (!WindowShouldClose()) {
+        if (IsKeyPressed(KEY_LEFT)) {
+            cur_scene_idx--;
+            if (cur_scene_idx < 0) { cur_scene_idx = scenes.size()-1; }
+            render_test_scene(queue, kernel, scenes[cur_scene_idx], pixels_d, out);
+            UpdateTexture(texture, out.data());
+        }
+        if (IsKeyPressed(KEY_RIGHT)) {
+            cur_scene_idx++;
+            if (cur_scene_idx >= scenes.size()) { cur_scene_idx = 0; }
+            render_test_scene(queue, kernel, scenes[cur_scene_idx], pixels_d, out);
+            UpdateTexture(texture, out.data());
+        }
+
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
