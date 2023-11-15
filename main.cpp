@@ -14,7 +14,7 @@
 
 void init_render(
     const cl::Context& context, const cl::CommandQueue& queue, const cl::Program& program, cl::Kernel& kernel,
-    cl::Buffer& ray_dirs_d, cl::Buffer& pixels_d, std::vector<rt::clScene>& scenes
+    cl::Buffer& ray_dirs_d, cl::Buffer& pixels_d, std::vector<rt::clScene>& scenes, rt::RendererConfig& config
 ) {
     auto start = std::chrono::high_resolution_clock::now();
     {
@@ -23,7 +23,7 @@ void init_render(
         std::vector<cl_float3> ray_dirs_h = camera.get_ray_directions();
         cl_float3 camera_position = {0, 0, 6, 0};
 
-        rt::RendererConfig config = {
+        config = rt::RendererConfig{
             .samples = 32,
             .bounces = 5
         };
@@ -43,7 +43,7 @@ void init_render(
         kernel.setArg(0, sizeof(cl_float3), &camera_position);
         kernel.setArg(1, ray_dirs_d);
         // kernel.setArg(2, sizeof(rt::clScene), &scene);
-        kernel.setArg(3, sizeof(rt::RendererConfig), &config);
+        // kernel.setArg(3, sizeof(rt::RendererConfig), &config);
         kernel.setArg(4, pixels_d);
     }
     auto stop = std::chrono::high_resolution_clock::now();
@@ -54,12 +54,13 @@ void init_render(
 
 void render_test_scene(
     const cl::CommandQueue& queue, cl::Kernel& kernel,
-    const rt::clScene& scene,
+    const rt::clScene& scene, const rt::RendererConfig& config,
     const cl::Buffer& pixels_d, std::vector<glm::vec4>& pixels_h
 ) {
     auto start = std::chrono::high_resolution_clock::now();
     {
         kernel.setArg(2, sizeof(rt::clScene), &scene);
+        kernel.setArg(3, sizeof(rt::RendererConfig), &config);
 
         queue.enqueueNDRangeKernel(
             kernel,
@@ -74,6 +75,41 @@ void render_test_scene(
     auto stop = std::chrono::high_resolution_clock::now();
     auto tt_ns = (stop - start).count();
     printf("render_test_scene took %f secs (%f ms)\n", tt_ns / 1e9, tt_ns / 1e6);
+}
+
+
+bool check_scene_change(int& cur_scene_idx, int scene_count) {
+    if (IsKeyDown(KEY_C) && IsKeyPressed(KEY_LEFT)) {
+        cur_scene_idx--;
+        if (cur_scene_idx < 0) { cur_scene_idx = scene_count - 1; }
+        return true;
+    }
+    if (IsKeyDown(KEY_C) && IsKeyPressed(KEY_RIGHT)) {
+        cur_scene_idx++;
+        if (cur_scene_idx == scene_count) { cur_scene_idx = 0; }
+        return true;
+    }
+
+    return false;
+}
+
+
+void change_config(rt::RendererConfig& config) {
+    if (IsKeyDown(KEY_S) && IsKeyPressed(KEY_EQUAL)) {
+        config.samples *= 1.5;
+    }
+    if (IsKeyDown(KEY_S) && IsKeyPressed(KEY_MINUS)) {
+        config.samples /= 1.5;
+        if (config.samples < 1) { config.samples = 1; }
+    }
+
+    if (IsKeyDown(KEY_B) && IsKeyPressed(KEY_EQUAL)) {
+        config.bounces++;
+    }
+    if (IsKeyDown(KEY_B) && IsKeyPressed(KEY_MINUS)) {
+        config.bounces--;
+        if (config.bounces < 1) { config.bounces = 1; }
+    }
 }
 
 
@@ -97,10 +133,11 @@ int main() {
     cl::Kernel kernel;
     cl::Buffer ray_dirs_d, pixels_d;
     std::vector<rt::clScene> scenes;
-    init_render(context, queue, program, kernel, ray_dirs_d, pixels_d, scenes);
+    rt::RendererConfig config;
+    init_render(context, queue, program, kernel, ray_dirs_d, pixels_d, scenes, config);
 
     int cur_scene_idx = 0;
-    render_test_scene(queue, kernel, scenes[cur_scene_idx], pixels_d, out);
+    render_test_scene(queue, kernel, scenes[cur_scene_idx], config, pixels_d, out);
 
     Image image = GenImageGradientRadial(IMAGE_WIDTH, IMAGE_HEIGHT, 0.1f, RAYWHITE, BLACK);
     ImageFormat(&image, PIXELFORMAT_UNCOMPRESSED_R32G32B32A32);
@@ -110,16 +147,15 @@ int main() {
     UpdateTexture(texture, out.data());
 
     while (!WindowShouldClose()) {
-        if (IsKeyPressed(KEY_LEFT)) {
-            cur_scene_idx--;
-            if (cur_scene_idx < 0) { cur_scene_idx = scenes.size()-1; }
-            render_test_scene(queue, kernel, scenes[cur_scene_idx], pixels_d, out);
-            UpdateTexture(texture, out.data());
+        if (check_scene_change(cur_scene_idx, scenes.size())) {
+            render_test_scene(queue, kernel, scenes[cur_scene_idx], config, pixels_d, out);
+            UpdateTexture(texture, out.data());            
         }
-        if (IsKeyPressed(KEY_RIGHT)) {
-            cur_scene_idx++;
-            if (cur_scene_idx >= scenes.size()) { cur_scene_idx = 0; }
-            render_test_scene(queue, kernel, scenes[cur_scene_idx], pixels_d, out);
+
+        change_config(config);
+        if (IsKeyPressed(KEY_SPACE)) {
+            printf("Config:\n  Samples: %d\n  Bounces: %d\n", config.samples, config.bounces);
+            render_test_scene(queue, kernel, scenes[cur_scene_idx], config, pixels_d, out);
             UpdateTexture(texture, out.data());
         }
 
