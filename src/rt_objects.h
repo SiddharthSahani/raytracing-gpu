@@ -4,11 +4,20 @@
 #include <glm/glm.hpp>
 #include <CL/opencl.hpp>
 
-#define MAX_SPHERES 5
+#define MAX_OBJECTS 5
 #define MAX_MATERIALS 5
 
 
 namespace rt {
+
+#define OBJECT_TYPE_SPHERE 0
+
+
+struct Sphere {
+    glm::vec3 position;
+    float radius;
+};
+
 
 struct RendererConfig {
     cl_uint samples;
@@ -16,9 +25,11 @@ struct RendererConfig {
 };
 
 
-struct Sphere {
-    glm::vec3 position;
-    float radius;
+struct Object {
+    union {
+        Sphere sphere;
+    };
+    uint32_t type;
     uint32_t material_idx;
 };
 
@@ -29,9 +40,9 @@ struct Material {
 
 
 struct Scene {
-    uint32_t num_spheres;
+    uint32_t num_objects;
     glm::vec3 sky_color;
-    Sphere spheres[MAX_SPHERES];
+    Object objects[MAX_OBJECTS];
     Material materials[MAX_MATERIALS];
 };
 
@@ -43,15 +54,24 @@ struct clSphere {
 };
 
 
+struct clObject {
+    union {
+        clSphere sphere;
+    };
+    cl_uint type;
+    cl_uint material_idx;
+};
+
+
 struct clMaterial {
     cl_float3 color;
 };
 
 
 struct clScene {
-    cl_uint num_spheres;
+    cl_uint num_objects;
     cl_float3 sky_color;
-    clSphere spheres[MAX_SPHERES];
+    clObject objects[MAX_OBJECTS];
     clMaterial materials[MAX_MATERIALS];
 };
 
@@ -60,9 +80,21 @@ clSphere to_clSphere(const Sphere& _sphere) {
     clSphere sphere;
     sphere.position = {_sphere.position[0], _sphere.position[1], _sphere.position[2], 1.0f};
     sphere.radius = _sphere.radius;
-    sphere.material_idx = _sphere.material_idx;
     return sphere;
 } 
+
+
+clObject to_clObject(const Object& _object) {
+    clObject object;
+    object.type = _object.type;
+    object.material_idx = _object.material_idx;
+    switch (_object.type) {
+        case OBJECT_TYPE_SPHERE:
+            object.sphere = to_clSphere(_object.sphere);
+            break;
+    }
+    return object;
+}
 
 
 clMaterial to_clMaterial(const Material& _material) {
@@ -74,10 +106,10 @@ clMaterial to_clMaterial(const Material& _material) {
 
 clScene to_clScene(const Scene& _scene) {
     clScene scene;
-    scene.num_spheres = _scene.num_spheres;
-    assert(scene.num_spheres <= MAX_SPHERES);
-    for (int i = 0; i < MAX_SPHERES; i++) {
-        scene.spheres[i] = to_clSphere(_scene.spheres[i]);
+    scene.num_objects = _scene.num_objects;
+    assert(scene.num_objects <= MAX_OBJECTS);
+    for (int i = 0; i < MAX_OBJECTS; i++) {
+        scene.objects[i] = to_clObject(_scene.objects[i]);
     }
     for (int i = 0; i < MAX_MATERIALS; i++) {
         scene.materials[i] = to_clMaterial(_scene.materials[i]);

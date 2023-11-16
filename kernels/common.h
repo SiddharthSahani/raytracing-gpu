@@ -13,7 +13,7 @@ typedef struct {
     float3 world_position;
     float3 world_normal;
     float hit_distance;
-    uint sphere_idx;
+    uint object_idx;
 } rt_HitRecord;
 
 

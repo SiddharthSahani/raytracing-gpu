@@ -1,16 +1,16 @@
 
 #include "kernels/common.h"
-#include "kernels/sphere.h"
 #include "kernels/random.h"
+#include "kernels/objects.h"
 
-#define MAX_SPHERES 5
+#define MAX_OBJECTS 5
 #define MAX_MATERIALS 5
 
 
 typedef struct {
-    uint num_spheres;
+    uint num_objects;
     float3 sky_color;
-    rt_Sphere spheres[MAX_SPHERES];
+    rt_Object objects[MAX_OBJECTS];
     rt_Material materials[MAX_MATERIALS];
 } rt_Scene;
 
@@ -25,9 +25,9 @@ rt_HitRecord traceRay(const rt_Ray* ray, local const rt_Scene* scene) {
     rt_HitRecord record;
     record.hit_distance = FLT_MAX;
 
-    for (int i = 0; i < scene->num_spheres; i++) {
-        if (hitsSphere(&scene->spheres[i], ray, &record)) {
-            record.sphere_idx = i;
+    for (int i = 0; i < scene->num_objects; i++) {
+        if (hitsObject(&scene->objects[i], ray, &record)) {
+            record.object_idx = i;
         }
     }
 
@@ -48,8 +48,8 @@ float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed, local c
             break;
         }
 
-        local const rt_Sphere* sphere = &scene->spheres[record.sphere_idx];
-        local const rt_Material* material = &scene->materials[sphere->material_idx];
+        local const rt_Object*object = &scene->objects[record.object_idx];
+        local const rt_Material* material = &scene->materials[object->material_idx];
 
         contribution *= material->color;
 
