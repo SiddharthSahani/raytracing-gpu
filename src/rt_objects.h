@@ -11,11 +11,19 @@
 namespace rt {
 
 #define OBJECT_TYPE_SPHERE 0
+#define OBJECT_TYPE_TRIANGLE 1
 
 
 struct Sphere {
     glm::vec3 position;
     float radius;
+};
+
+
+struct Triangle {
+    glm::vec3 v0;
+    glm::vec3 v1;
+    glm::vec3 v2;
 };
 
 
@@ -28,6 +36,7 @@ struct RendererConfig {
 struct Object {
     union {
         Sphere sphere;
+        Triangle triangle;
     };
     uint32_t type;
     uint32_t material_idx;
@@ -54,9 +63,17 @@ struct clSphere {
 };
 
 
+struct clTriangle {
+    cl_float3 v0;
+    cl_float3 v1;
+    cl_float3 v2;
+};
+
+
 struct clObject {
     union {
         clSphere sphere;
+        clTriangle triangle;
     };
     cl_uint type;
     cl_uint material_idx;
@@ -81,7 +98,16 @@ clSphere to_clSphere(const Sphere& _sphere) {
     sphere.position = {_sphere.position[0], _sphere.position[1], _sphere.position[2], 1.0f};
     sphere.radius = _sphere.radius;
     return sphere;
-} 
+}
+
+
+clTriangle to_clTriangle(const Triangle& _triangle) {
+    clTriangle triangle;
+    triangle.v0 = {_triangle.v0.x, _triangle.v0.y, _triangle.v0.z, 1.0f};
+    triangle.v1 = {_triangle.v1.x, _triangle.v1.y, _triangle.v1.z, 1.0f};
+    triangle.v2 = {_triangle.v2.x, _triangle.v2.y, _triangle.v2.z, 1.0f};
+    return triangle;
+}
 
 
 clObject to_clObject(const Object& _object) {
@@ -91,6 +117,9 @@ clObject to_clObject(const Object& _object) {
     switch (_object.type) {
         case OBJECT_TYPE_SPHERE:
             object.sphere = to_clSphere(_object.sphere);
+            break;
+        case OBJECT_TYPE_TRIANGLE:
+            object.triangle = to_clTriangle(_object.triangle);
             break;
     }
     return object;
