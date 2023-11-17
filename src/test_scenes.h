@@ -12,6 +12,14 @@ rt::Object create_sphere(glm::vec3 position, float radius) {
 }
 
 
+rt::Object create_triangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2) {
+    rt::Object object;
+    object.triangle = {.v0 = v0, .v1 = v1, .v2 = v2};
+    object.type = OBJECT_TYPE_TRIANGLE;
+    return object;
+}
+
+
 rt::clScene create_scene_1() {
     rt::Scene scene;
 
@@ -37,7 +45,8 @@ rt::clScene create_scene_2() {
 
     scene.objects[0] = create_sphere({0.0f, 0.0f, 0.0f}, 1.0f);
     scene.objects[0].material_idx = 0;
-    scene.objects[1] = create_sphere({0.0f, -6.0f, 0.0f}, 5.0f);
+    scene.objects[1] = create_triangle({-2.0f, -1.0f, -1.5f}, {2.0f, -1.0f, -1.5f}, {0.0f, -1.5f, 2.0f});
+    scene.objects[1] = create_triangle({-2.0f, -1.0f, -1.5f}, {2.0f, -1.0f, -1.5f}, {0.0f, -1.0f, 2.0f});
     scene.objects[1].material_idx = 1;
 
     scene.materials[0] = {.color = {0.0f, 0.2f, 0.8f}};
