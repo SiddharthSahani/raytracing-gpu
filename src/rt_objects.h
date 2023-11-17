@@ -95,7 +95,7 @@ struct clScene {
 
 clSphere to_clSphere(const Sphere& _sphere) {
     clSphere sphere;
-    sphere.position = {_sphere.position[0], _sphere.position[1], _sphere.position[2], 1.0f};
+    sphere.position = {_sphere.position.x, _sphere.position.y, _sphere.position.z, 1.0f};
     sphere.radius = _sphere.radius;
     return sphere;
 }
@@ -128,7 +128,7 @@ clObject to_clObject(const Object& _object) {
 
 clMaterial to_clMaterial(const Material& _material) {
     clMaterial material;
-    material.color = {_material.color[0], _material.color[1], _material.color[2], 1.0f};
+    material.color = {_material.color.x, _material.color.y, _material.color.z, 1.0f};
     return material;
 }
 
@@ -143,7 +143,7 @@ clScene to_clScene(const Scene& _scene) {
     for (int i = 0; i < MAX_MATERIALS; i++) {
         scene.materials[i] = to_clMaterial(_scene.materials[i]);
     }
-    scene.sky_color = {_scene.sky_color[0], _scene.sky_color[1], _scene.sky_color[2], 1.0f};
+    scene.sky_color = {_scene.sky_color.x, _scene.sky_color.y, _scene.sky_color.z, 1.0f};
     return scene;
 }
 
