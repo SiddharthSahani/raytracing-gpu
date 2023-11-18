@@ -69,14 +69,22 @@ std::string read_file(const char* filepath) {
 }
 
 
-bool create_opencl_objects(const cl::Device& device, cl::Context& context, cl::CommandQueue& queue, cl::Program& program) {
+void create_opencl_objects(const cl::Device& device, cl::Context& context, cl::CommandQueue& queue, cl::Program& program) {
     context = cl::Context(device);
     queue = cl::CommandQueue(context, device);
 
     std::string program_string = read_file("kernels/renderer.cl");
     program = cl::Program(program_string);
+}
 
-    if (program.build()) {
+
+bool build_program(const cl::Program& program, const cl::Device& device, bool print_scene_info = false) {
+    std::string program_build_options = "";
+    if (print_scene_info) {
+        program_build_options += "-DPRINT_SCENE_INFO";
+    }
+
+    if (program.build(program_build_options.c_str())) {
         printf("Unable to build OpenCl program\n");
         std::string build_log = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
         printf("Build Log:\n%s\n", build_log.c_str());

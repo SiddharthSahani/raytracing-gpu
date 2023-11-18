@@ -121,7 +121,8 @@ int main() {
     cl::Context context;
     cl::CommandQueue queue;
     cl::Program program;
-    if (!create_opencl_objects(device, context, queue, program)) {
+    create_opencl_objects(device, context, queue, program);
+    if (!build_program(program, device)) {
         return -1;
     }
 

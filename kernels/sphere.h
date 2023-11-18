@@ -36,4 +36,12 @@ bool hitsSphere(local const rt_Sphere* sphere, const rt_Ray* ray, rt_HitRecord* 
 }
 
 
+void printSphereInfo(local const rt_Sphere* sphere) {
+    printf("Sphere {\n");
+    printf("    Position: {%f}\n", sphere->position);
+    printf("    Radius: %f\n", sphere->radius);
+    printf("  }\n");
+}
+
+
 #endif
