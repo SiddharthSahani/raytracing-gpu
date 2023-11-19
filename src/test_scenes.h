@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "src/rt_objects.h"
+#include "rt-structs/cl_objects.h"
 
 
 rt::Object create_sphere(glm::vec3 position, float radius) {
@@ -31,7 +31,7 @@ rt::clScene create_scene_1() {
     scene.materials[0] = {.color = {0.2f, 0.9f, 0.8f}};
     scene.materials[1] = {.color = {1.0f, 0.0f, 1.0f}};
 
-    scene.num_objects = 2;
+    scene.object_count = 2;
 
     scene.sky_color = {210.0f, 210.0f, 230.0f};
     scene.sky_color /= 255.0f;
@@ -52,7 +52,7 @@ rt::clScene create_scene_2() {
     scene.materials[0] = {.color = {0.0f, 0.2f, 0.8f}};
     scene.materials[1] = {.color = {0.0f, 1.0f, 1.0f}};
 
-    scene.num_objects = 2;
+    scene.object_count = 2;
 
     scene.sky_color = {180.0f, 150.0f, 200.0f};
     scene.sky_color /= 255.0f;
@@ -75,7 +75,7 @@ rt::clScene create_scene_3() {
     scene.materials[1] = {.color = {1.0f, 0.0f, 0.0f}};
     scene.materials[2] = {.color = {0.3f, 0.8f, 0.3f}};
 
-    scene.num_objects = 3;
+    scene.object_count = 3;
 
     scene.sky_color = {225.0f, 225.0f, 255.0f};
     scene.sky_color /= 255.0f;

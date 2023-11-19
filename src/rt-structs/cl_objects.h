@@ -1,65 +1,15 @@
 
 #pragma once
 
-#include <glm/glm.hpp>
+#include "objects.h"
 #include <CL/opencl.hpp>
-
-#define MAX_OBJECTS 5
-#define MAX_MATERIALS 5
 
 
 namespace rt {
 
-#define OBJECT_TYPE_SPHERE 0
-#define OBJECT_TYPE_TRIANGLE 1
-
-
-struct Sphere {
-    glm::vec3 position;
-    float radius;
-};
-
-
-struct Triangle {
-    glm::vec3 v0;
-    glm::vec3 v1;
-    glm::vec3 v2;
-};
-
-
-struct RendererConfig {
-    cl_uint samples;
-    cl_uint bounces;
-};
-
-
-struct Object {
-    union {
-        Sphere sphere;
-        Triangle triangle;
-    };
-    uint32_t type;
-    uint32_t material_idx;
-};
-
-
-struct Material {
-    glm::vec3 color;
-};
-
-
-struct Scene {
-    uint32_t num_objects;
-    glm::vec3 sky_color;
-    Object objects[MAX_OBJECTS];
-    Material materials[MAX_MATERIALS];
-};
-
-
 struct clSphere {
     cl_float3 position;
     cl_float radius;
-    cl_uint material_idx;
 };
 
 
@@ -86,10 +36,16 @@ struct clMaterial {
 
 
 struct clScene {
-    cl_uint num_objects;
-    cl_float3 sky_color;
     clObject objects[MAX_OBJECTS];
     clMaterial materials[MAX_MATERIALS];
+    cl_float3 sky_color;
+    cl_uint object_count;
+};
+
+
+struct clRendererConfig {
+    cl_uint sample_count;
+    cl_uint bounce_limit;
 };
 
 
@@ -135,8 +91,9 @@ clMaterial to_clMaterial(const Material& _material) {
 
 clScene to_clScene(const Scene& _scene) {
     clScene scene;
-    scene.num_objects = _scene.num_objects;
-    assert(scene.num_objects <= MAX_OBJECTS);
+    scene.object_count = _scene.object_count;
+    assert(scene.object_count <= MAX_OBJECTS);
+
     for (int i = 0; i < MAX_OBJECTS; i++) {
         scene.objects[i] = to_clObject(_scene.objects[i]);
     }
@@ -145,6 +102,14 @@ clScene to_clScene(const Scene& _scene) {
     }
     scene.sky_color = {_scene.sky_color.x, _scene.sky_color.y, _scene.sky_color.z, 1.0f};
     return scene;
+}
+
+
+clRendererConfig to_clRendererConfig(const RendererConfig& _config) {
+    clRendererConfig config;
+    config.sample_count = _config.sample_count;
+    config.bounce_limit = _config.bounce_limit;
+    return config;
 }
 
 }

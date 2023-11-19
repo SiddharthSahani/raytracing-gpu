@@ -4,20 +4,20 @@
 #include "kernels/objects.h"
 
 #define MAX_OBJECTS 5
-#define MAX_MATERIALS 5
+#define MAX_MATERIALS 3
 
 
 typedef struct {
-    uint num_objects;
-    float3 sky_color;
     rt_Object objects[MAX_OBJECTS];
     rt_Material materials[MAX_MATERIALS];
+    float3 sky_color;
+    uint object_count;
 } rt_Scene;
 
 
 typedef struct {
-    uint samples;
-    uint bounces;
+    uint sample_count;
+    uint bounce_limit;
 } rt_Config;
 
 
@@ -27,8 +27,8 @@ void printSceneInfo(local const rt_Scene* scene) {
         using_materials[i] = false;
     }
 
-    printf("Number of objects: %d\n", scene->num_objects);
-    for (int i = 0; i < scene->num_objects; i++) {
+    printf("Number of objects: %d\n", scene->object_count);
+    for (int i = 0; i < scene->object_count; i++) {
         local const rt_Object* object = &scene->objects[i];
         printf("Object %d:\n", i+1);
         printf("  internal: ");
@@ -59,7 +59,7 @@ rt_HitRecord traceRay(const rt_Ray* ray, local const rt_Scene* scene) {
     rt_HitRecord record;
     record.hit_distance = FLT_MAX;
 
-    for (int i = 0; i < scene->num_objects; i++) {
+    for (int i = 0; i < scene->object_count; i++) {
         if (hitsObject(&scene->objects[i], ray, &record)) {
             record.object_idx = i;
         }
@@ -73,7 +73,7 @@ float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed, local c
     float3 light = {0.0f, 0.0f, 0.0f};
     float3 contribution = {1.0f, 1.0f, 1.0f};
 
-    for (int i = 0; i < config->bounces; i++) {
+    for (int i = 0; i < config->bounce_limit; i++) {
         rng_seed += i * i * i;
         rt_HitRecord record = traceRay(&ray, scene);
 
@@ -124,7 +124,7 @@ kernel void renderScene(
     ray.origin = camera_position;
     ray.direction = ray_directions[pixel_idx];
 
-    const int frames = config.samples;
+    const int frames = config.sample_count;
     for (int frame_idx = 0; frame_idx < frames; frame_idx++) {
         rng_seed += frame_idx * 32421;
         accumulated_color += clamp(perPixel(ray, &scene, &rng_seed, &config), 0.0f, 1.0f);

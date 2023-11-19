@@ -24,8 +24,8 @@ void init_render(
         cl_float3 camera_position = {0, 0, 6, 0};
 
         config = rt::RendererConfig{
-            .samples = 32,
-            .bounces = 5
+            .sample_count = 32,
+            .bounce_limit = 5
         };
 
         ray_dirs_d = cl::Buffer(context, CL_MEM_READ_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(cl_float3));
@@ -60,7 +60,8 @@ void render_test_scene(
     auto start = std::chrono::high_resolution_clock::now();
     {
         kernel.setArg(2, sizeof(rt::clScene), &scene);
-        kernel.setArg(3, sizeof(rt::RendererConfig), &config);
+        rt::clRendererConfig config_ = rt::to_clRendererConfig(config);
+        kernel.setArg(3, sizeof(rt::clRendererConfig), &config_);
 
         queue.enqueueNDRangeKernel(
             kernel,
@@ -96,19 +97,19 @@ bool check_scene_change(int& cur_scene_idx, int scene_count) {
 
 void change_config(rt::RendererConfig& config) {
     if (IsKeyDown(KEY_S) && IsKeyPressed(KEY_EQUAL)) {
-        config.samples *= 1.5;
+        config.sample_count *= 1.5;
     }
     if (IsKeyDown(KEY_S) && IsKeyPressed(KEY_MINUS)) {
-        config.samples /= 1.5;
-        if (config.samples < 1) { config.samples = 1; }
+        config.sample_count /= 1.5;
+        if (config.sample_count < 1) { config.sample_count = 1; }
     }
 
     if (IsKeyDown(KEY_B) && IsKeyPressed(KEY_EQUAL)) {
-        config.bounces++;
+        config.bounce_limit++;
     }
     if (IsKeyDown(KEY_B) && IsKeyPressed(KEY_MINUS)) {
-        config.bounces--;
-        if (config.bounces < 1) { config.bounces = 1; }
+        config.bounce_limit--;
+        if (config.bounce_limit < 1) { config.bounce_limit = 1; }
     }
 }
 
@@ -122,7 +123,7 @@ int main() {
     cl::CommandQueue queue;
     cl::Program program;
     create_opencl_objects(device, context, queue, program);
-    if (!build_program(program, device)) {
+    if (!build_program(program, device, true)) {
         return -1;
     }
 
@@ -155,7 +156,7 @@ int main() {
 
         change_config(config);
         if (IsKeyPressed(KEY_SPACE)) {
-            printf("Config:\n  Samples: %d\n  Bounces: %d\n", config.samples, config.bounces);
+            printf("Config:\n  Samples: %d\n  Bounces: %d\n", config.sample_count, config.bounce_limit);
             render_test_scene(queue, kernel, scenes[cur_scene_idx], config, pixels_d, out);
             UpdateTexture(texture, out.data());
         }
