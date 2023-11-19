@@ -123,7 +123,7 @@ int main() {
     cl::CommandQueue queue;
     cl::Program program;
     create_opencl_objects(device, context, queue, program);
-    if (!build_program(program, device, true)) {
+    if (!build_program(program, device)) {
         return -1;
     }
 

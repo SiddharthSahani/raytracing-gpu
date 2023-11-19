@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "src/ray.h"
+#include <CL/opencl.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vector>

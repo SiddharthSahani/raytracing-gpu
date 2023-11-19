@@ -2,7 +2,7 @@
 #pragma once
 
 #include "objects.h"
-#include <CL/opencl.hpp>
+#include <CL/opencl.h>
 
 
 namespace rt {
