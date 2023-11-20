@@ -21,40 +21,6 @@ typedef struct {
 } rt_Config;
 
 
-void printSceneInfo(local const rt_Scene* scene) {
-    bool using_materials[MAX_MATERIALS];
-    for (int i = 0; i < MAX_MATERIALS; i++) {
-        using_materials[i] = false;
-    }
-
-    printf("Number of objects: %d\n", scene->object_count);
-    for (int i = 0; i < scene->object_count; i++) {
-        local const rt_Object* object = &scene->objects[i];
-        printf("Object %d:\n", i+1);
-        printf("  internal: ");
-        switch (object->type) {
-            case OBJECT_TYPE_SPHERE:
-                printSphereInfo(&object->sphere);
-                break;
-            case OBJECT_TYPE_TRIANGLE:
-                printTriangleInfo(&object->triangle);
-                break;
-            default:
-                printf("Invalid { type = %d }\n", object->type);
-        }
-        printf("  material-index: %d\n", object->material_idx);
-        using_materials[object->material_idx] = true;
-    }
-
-    for (int i = 0; i < MAX_MATERIALS; i++) {
-        if (using_materials[i]) {
-            printf("Material Id: %d\n", i);
-            printf(" color: {%f}\n", scene->materials[i].color);
-        }
-    }
-}
-
-
 float3 reflect(float3 I, float3 N) {
     return I - 2.0f * dot(N, I) * N;
 }
@@ -109,6 +75,7 @@ kernel void renderScene(
 ) {
     local rt_Scene scene;
     local rt_Config config;
+
     if (get_local_id(0) == 0) {
         scene = _scene;
         config = _config;
@@ -116,12 +83,6 @@ kernel void renderScene(
     barrier(CLK_LOCAL_MEM_FENCE);
 
     size_t pixel_idx = get_global_id(0);
-
-#   ifdef PRINT_SCENE_INFO
-    if (pixel_idx == 0) {
-        printSceneInfo(&scene);
-    }
-#   endif
 
     uint rng_seed = pixel_idx;
 

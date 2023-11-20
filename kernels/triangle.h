@@ -51,13 +51,4 @@ bool hitsTriangle(local const rt_Triangle* triangle, const rt_Ray* ray, rt_HitRe
 }
 
 
-void printTriangleInfo(local const rt_Triangle* triangle) {
-    printf("Triangle {\n");
-    printf("    v0: {%f}\n", triangle->v0);
-    printf("    v1: {%f}\n", triangle->v1);
-    printf("    v2: {%f}\n", triangle->v2);
-    printf("  }\n");
-}
-
-
 #endif
