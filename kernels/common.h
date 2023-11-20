@@ -19,6 +19,7 @@ typedef struct {
 
 typedef struct {
     float3 color;
+    float smoothness;
 } rt_Material;
 
 

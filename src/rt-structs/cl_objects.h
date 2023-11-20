@@ -32,6 +32,7 @@ struct clObject {
 
 struct clMaterial {
     cl_float3 color;
+    cl_float smoothness;
 };
 
 
@@ -85,6 +86,7 @@ clObject to_clObject(const Object& _object) {
 clMaterial to_clMaterial(const Material& _material) {
     clMaterial material;
     material.color = {_material.color.x, _material.color.y, _material.color.z, 1.0f};
+    material.smoothness = _material.smoothness;
     return material;
 }
 

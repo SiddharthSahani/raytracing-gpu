@@ -55,6 +55,11 @@ void printSceneInfo(local const rt_Scene* scene) {
 }
 
 
+float3 reflect(float3 I, float3 N) {
+    return I - 2.0f * dot(N, I) * N;
+}
+
+
 rt_HitRecord traceRay(const rt_Ray* ray, local const rt_Scene* scene) {
     rt_HitRecord record;
     record.hit_distance = FLT_MAX;
@@ -82,13 +87,15 @@ float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed, local c
             break;
         }
 
-        local const rt_Object*object = &scene->objects[record.object_idx];
+        local const rt_Object* object = &scene->objects[record.object_idx];
         local const rt_Material* material = &scene->materials[object->material_idx];
 
         contribution *= material->color;
 
+        float3 diffuse_dir = record.world_normal + randomFloat3(rng_seed);
+        float3 specular_dir = reflect(ray.direction, record.world_normal);
+        ray.direction = normalize(mix(diffuse_dir, specular_dir, material->smoothness));
         ray.origin = record.world_position + record.world_normal * 0.001f;
-        ray.direction = normalize(record.world_normal + randomFloat3(rng_seed));
     }
 
     return light;

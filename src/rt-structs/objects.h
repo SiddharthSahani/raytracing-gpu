@@ -36,6 +36,7 @@ struct Object {
 
 struct Material {
     glm::vec3 color;
+    float smoothness;
 };
 
 
