@@ -28,8 +28,8 @@ rt::clScene create_scene_1() {
     scene.objects[1] = create_sphere({0.0f, -6.0f, 0.0f}, 5.0f);
     scene.objects[1].material_idx = 1;
 
-    scene.materials[0] = {.color = {0.2f, 0.9f, 0.8f}};
-    scene.materials[1] = {.color = {1.0f, 0.0f, 1.0f}};
+    scene.materials[0] = {.color = {0.2f, 0.9f, 0.8f}, .smoothness = 0.3f};
+    scene.materials[1] = {.color = {1.0f, 0.0f, 1.0f}, .smoothness = 0.7f};
 
     scene.object_count = 2;
 
@@ -49,8 +49,8 @@ rt::clScene create_scene_2() {
     scene.objects[1] = create_triangle({-2.0f, -1.0f, -1.5f}, {2.0f, -1.0f, -1.5f}, {0.0f, -1.0f, 2.0f});
     scene.objects[1].material_idx = 1;
 
-    scene.materials[0] = {.color = {0.0f, 0.2f, 0.8f}};
-    scene.materials[1] = {.color = {0.0f, 1.0f, 1.0f}};
+    scene.materials[0] = {.color = {0.0f, 0.2f, 0.8f}, .smoothness = 0.0f};
+    scene.materials[1] = {.color = {0.0f, 1.0f, 1.0f}, .smoothness = 1.0f};
 
     scene.object_count = 2;
 
@@ -71,9 +71,9 @@ rt::clScene create_scene_3() {
     scene.objects[2] = create_sphere({0.0f, -101.0f, 0.0f}, 100.0f);
     scene.objects[2].material_idx = 2;
 
-    scene.materials[0] = {.color = {1.0f, 0.0f, 1.0f}};
-    scene.materials[1] = {.color = {1.0f, 0.0f, 0.0f}};
-    scene.materials[2] = {.color = {0.3f, 0.8f, 0.3f}};
+    scene.materials[0] = {.color = {1.0f, 0.0f, 1.0f}, .smoothness = 0.5f};
+    scene.materials[1] = {.color = {1.0f, 0.0f, 0.0f}, .smoothness = 0.6f};
+    scene.materials[2] = {.color = {0.3f, 0.8f, 0.3f}, .smoothness = 0.2f};
 
     scene.object_count = 3;
 
