@@ -78,11 +78,8 @@ void create_opencl_objects(const cl::Device& device, cl::Context& context, cl::C
 }
 
 
-bool build_program(const cl::Program& program, const cl::Device& device, bool print_scene_info = false) {
+bool build_program(const cl::Program& program, const cl::Device& device) {
     std::string program_build_options = "";
-    if (print_scene_info) {
-        program_build_options += "-DPRINT_SCENE_INFO";
-    }
 
     if (program.build(program_build_options.c_str())) {
         printf("Unable to build OpenCl program\n");
