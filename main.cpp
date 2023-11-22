@@ -14,24 +14,20 @@
 
 void init_render(
     const cl::Context& context, const cl::CommandQueue& queue, const cl::Program& program, cl::Kernel& kernel,
-    cl::Buffer& ray_dirs_d, cl::Buffer& pixels_d, std::vector<rt::clScene>& scenes, rt::RendererConfig& config
+    cl::Buffer& pixels_d, std::vector<rt::clScene>& scenes, rt::RendererConfig& config
 ) {
     auto start = std::chrono::high_resolution_clock::now();
     {
-        rt::Camera camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT});
-        camera.calculate_ray_directions({0, 0, 6}, {0, 0, -1});
-        std::vector<cl_float3> ray_dirs_h = camera.get_ray_directions();
-        cl_float3 camera_position = {0, 0, 6, 0};
+        glm::vec3 camera_position = {0, 0, 6};
+        glm::vec3 camera_direction = {0, 0, -1};
+        rt::clCamera camera = rt::create_camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT}, camera_position, camera_direction);
 
         config = rt::RendererConfig{
             .sample_count = 32,
             .bounce_limit = 5
         };
 
-        ray_dirs_d = cl::Buffer(context, CL_MEM_READ_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(cl_float3));
         pixels_d = cl::Buffer(context, CL_MEM_WRITE_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(cl_float4));
-
-        queue.enqueueWriteBuffer(ray_dirs_d, true, 0, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(cl_float3), ray_dirs_h.data());
 
         scenes = {
             create_scene_1(),
@@ -40,11 +36,10 @@ void init_render(
         };
 
         kernel = cl::Kernel(program, "renderScene");
-        kernel.setArg(0, sizeof(cl_float3), &camera_position);
-        kernel.setArg(1, ray_dirs_d);
-        // kernel.setArg(2, sizeof(rt::clScene), &scene);
-        // kernel.setArg(3, sizeof(rt::RendererConfig), &config);
-        kernel.setArg(4, pixels_d);
+        kernel.setArg(0, sizeof(rt::clCamera), &camera);
+        // kernel.setArg(1, sizeof(rt::clScene), &scene);
+        // kernel.setArg(2, sizeof(rt::RendererConfig), &config);
+        kernel.setArg(3, pixels_d);
     }
     auto stop = std::chrono::high_resolution_clock::now();
     auto tt_ns = (stop - start).count();
@@ -59,9 +54,9 @@ void render_test_scene(
 ) {
     auto start = std::chrono::high_resolution_clock::now();
     {
-        kernel.setArg(2, sizeof(rt::clScene), &scene);
+        kernel.setArg(1, sizeof(rt::clScene), &scene);
         rt::clRendererConfig config_ = rt::to_clRendererConfig(config);
-        kernel.setArg(3, sizeof(rt::clRendererConfig), &config_);
+        kernel.setArg(2, sizeof(rt::clRendererConfig), &config_);
 
         queue.enqueueNDRangeKernel(
             kernel,
@@ -133,10 +128,10 @@ int main() {
     
     std::vector<glm::vec4> out(IMAGE_WIDTH*IMAGE_HEIGHT, glm::vec4(0, 1, 0, 1));
     cl::Kernel kernel;
-    cl::Buffer ray_dirs_d, pixels_d;
+    cl::Buffer pixels_d;
     std::vector<rt::clScene> scenes;
     rt::RendererConfig config;
-    init_render(context, queue, program, kernel, ray_dirs_d, pixels_d, scenes, config);
+    init_render(context, queue, program, kernel, pixels_d, scenes, config);
 
     int cur_scene_idx = 0;
     render_test_scene(queue, kernel, scenes[cur_scene_idx], config, pixels_d, out);

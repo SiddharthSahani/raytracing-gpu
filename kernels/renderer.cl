@@ -2,6 +2,7 @@
 #include "kernels/common.h"
 #include "kernels/random.h"
 #include "kernels/objects.h"
+#include "kernels/ray_gen.h"
 
 #define MAX_OBJECTS 5
 #define MAX_MATERIALS 3
@@ -69,7 +70,7 @@ float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed, local c
 
 
 kernel void renderScene(
-    const float3 camera_position, global const float3* ray_directions,
+    const rt_Camera camera,
     const rt_Scene _scene, const rt_Config _config,
     global float4* out
 ) {
@@ -82,15 +83,13 @@ kernel void renderScene(
     }
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    size_t pixel_idx = get_global_id(0);
+    uint pixel_idx = get_global_id(0);
 
     uint rng_seed = pixel_idx;
 
     float3 accumulated_color = {0.0f, 0.0f, 0.0f};
-    
-    rt_Ray ray;
-    ray.origin = camera_position;
-    ray.direction = ray_directions[pixel_idx];
+
+    rt_Ray ray = getRay(&camera, pixel_idx);
 
     const int frames = config.sample_count;
     for (int frame_idx = 0; frame_idx < frames; frame_idx++) {
