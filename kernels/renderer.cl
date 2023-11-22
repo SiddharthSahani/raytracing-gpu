@@ -32,8 +32,9 @@ rt_HitRecord traceRay(const rt_Ray* ray, local const rt_Scene* scene) {
     record.hit_distance = FLT_MAX;
 
     for (int i = 0; i < scene->object_count; i++) {
-        if (hitsObject(&scene->objects[i], ray, &record)) {
-            record.object_idx = i;
+        const local rt_Object* object = &scene->objects[i];
+        if (hitsObject(object, ray, &record)) {
+            record.material_idx = object->material_idx;
         }
     }
 
@@ -54,8 +55,7 @@ float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed, local c
             break;
         }
 
-        local const rt_Object* object = &scene->objects[record.object_idx];
-        local const rt_Material* material = &scene->materials[object->material_idx];
+        local const rt_Material* material = &scene->materials[record.material_idx];
 
         contribution *= material->color;
 
