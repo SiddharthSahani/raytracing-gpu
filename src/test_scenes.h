@@ -1,84 +1,55 @@
 
 #pragma once
 
-#include "rt-structs/cl_objects.h"
+#include "scene.h"
 
 
-rt::Object create_sphere(glm::vec3 position, float radius) {
-    rt::Object object;
-    object.sphere = {.position = position, .radius = radius};
-    object.type = OBJECT_TYPE_SPHERE;
-    return object;
-}
+rt::CompiledScene create_scene_1() {
+    auto cyan_mat = rt::createMaterial({0.2f, 0.9f, 0.8f}, 0.3f);
+    auto pink_mat = rt::createMaterial({1.0f, 0.0f, 1.0f}, 0.7f);
 
+    auto sph1 = rt::createSphere({0.0f, 0.0f, 0.0f}, 1.0f, cyan_mat);
+    auto sph2 = rt::createSphere({0.0f, -6.0f, 0.0f}, 5.0f, pink_mat);
 
-rt::Object create_triangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2) {
-    rt::Object object;
-    object.triangle = {.v0 = v0, .v1 = v1, .v2 = v2};
-    object.type = OBJECT_TYPE_TRIANGLE;
-    return object;
-}
-
-
-rt::clScene create_scene_1() {
     rt::Scene scene;
+    scene.addObject(sph1);
+    scene.addObject(sph2);
+    scene.setSkyColor(glm::vec3(210, 210, 230) / 255.0f);
 
-    scene.objects[0] = create_sphere({0.0f, 0.0f, 0.0f}, 1.0f);
-    scene.objects[0].material_idx = 0;
-    scene.objects[1] = create_sphere({0.0f, -6.0f, 0.0f}, 5.0f);
-    scene.objects[1].material_idx = 1;
-
-    scene.materials[0] = {.color = {0.2f, 0.9f, 0.8f}, .smoothness = 0.3f};
-    scene.materials[1] = {.color = {1.0f, 0.0f, 1.0f}, .smoothness = 0.7f};
-
-    scene.object_count = 2;
-
-    scene.sky_color = {210.0f, 210.0f, 230.0f};
-    scene.sky_color /= 255.0f;
-
-    return rt::to_clScene(scene);
+    return scene.compile(nullptr);
 }
 
 
-rt::clScene create_scene_2() {
+rt::CompiledScene create_scene_2() {
+    auto blue_diff_mat = rt::createMaterial({0.0f, 0.2f, 0.8f}, 0.0f);
+    auto cyan_refl_mat = rt::createMaterial({0.0f, 1.0f, 1.0f}, 1.0f);
+
+    auto sph = rt::createSphere({0.0f, 0.0f, 0.0f}, 1.0f, blue_diff_mat);
+    auto tri = rt::createTriangle({-2.0f, -1.0f, -1.5f}, {2.0f, -1.0f, -1.5f}, {0.0f, -1.0f, 2.0f}, cyan_refl_mat);
+
     rt::Scene scene;
+    scene.addObject(sph);
+    scene.addObject(tri);
+    scene.setSkyColor(glm::vec3(180, 150, 200) / 255.0f);
 
-    scene.objects[0] = create_sphere({0.0f, 0.0f, 0.0f}, 1.0f);
-    scene.objects[0].material_idx = 0;
-    scene.objects[1] = create_triangle({-2.0f, -1.0f, -1.5f}, {2.0f, -1.0f, -1.5f}, {0.0f, -1.5f, 2.0f});
-    scene.objects[1] = create_triangle({-2.0f, -1.0f, -1.5f}, {2.0f, -1.0f, -1.5f}, {0.0f, -1.0f, 2.0f});
-    scene.objects[1].material_idx = 1;
-
-    scene.materials[0] = {.color = {0.0f, 0.2f, 0.8f}, .smoothness = 0.0f};
-    scene.materials[1] = {.color = {0.0f, 1.0f, 1.0f}, .smoothness = 1.0f};
-
-    scene.object_count = 2;
-
-    scene.sky_color = {180.0f, 150.0f, 200.0f};
-    scene.sky_color /= 255.0f;
-
-    return rt::to_clScene(scene);
+    return scene.compile(nullptr);
 }
 
 
-rt::clScene create_scene_3() {
+rt::CompiledScene create_scene_3() {
+    auto purple_mat = rt::createMaterial({1.0f, 0.0f, 1.0f}, 0.5f);
+    auto red_mat = rt::createMaterial({1.0f, 0.0f, 0.0f}, 0.6f);
+    auto green_mat = rt::createMaterial({0.3f, 0.8f, 0.3f}, 0.2f);
+
+    auto sph1 = rt::createSphere({0.0f, 0.0f, 0.0f}, 1.0f, purple_mat);
+    auto sph2 = rt::createSphere({2.0f, 0.0f, 0.0f}, 1.0f, red_mat);
+    auto sph3 = rt::createSphere({0.0f, -101.0f, 0.0f}, 100.0f, green_mat);
+
     rt::Scene scene;
+    scene.addObject(sph1);
+    scene.addObject(sph2);
+    scene.addObject(sph3);
+    scene.setSkyColor(glm::vec3(225, 225, 255) / 255.0f);
 
-    scene.objects[0] = create_sphere({0.0f, 0.0f, 0.0f}, 1.0f);
-    scene.objects[0].material_idx = 0;
-    scene.objects[1] = create_sphere({2.0f, 0.0f, 0.0f}, 1.0f);
-    scene.objects[1].material_idx = 1;
-    scene.objects[2] = create_sphere({0.0f, -101.0f, 0.0f}, 100.0f);
-    scene.objects[2].material_idx = 2;
-
-    scene.materials[0] = {.color = {1.0f, 0.0f, 1.0f}, .smoothness = 0.5f};
-    scene.materials[1] = {.color = {1.0f, 0.0f, 0.0f}, .smoothness = 0.6f};
-    scene.materials[2] = {.color = {0.3f, 0.8f, 0.3f}, .smoothness = 0.2f};
-
-    scene.object_count = 3;
-
-    scene.sky_color = {225.0f, 225.0f, 255.0f};
-    scene.sky_color /= 255.0f;
-
-    return rt::to_clScene(scene);
+    return scene.compile(nullptr);
 }

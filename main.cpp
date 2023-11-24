@@ -1,8 +1,7 @@
 
 #include "src/cl_utils.h"
 #include "src/camera.h"
-// #include "src/test_scenes.h"
-#include "src/test_scenes_new.h"
+#include "src/test_scenes.h"
 #include <raylib/raylib.h>
 #include <chrono>
 
