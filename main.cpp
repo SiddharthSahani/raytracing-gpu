@@ -1,7 +1,8 @@
 
 #include "src/cl_utils.h"
 #include "src/camera.h"
-#include "src/test_scenes.h"
+// #include "src/test_scenes.h"
+#include "src/test_scenes_new.h"
 #include <raylib/raylib.h>
 #include <chrono>
 
@@ -12,9 +13,19 @@
 #define IMAGE_HEIGHT (720/2)
 
 
+namespace rt {
+
+struct RendererConfig {
+    cl_uint sample_count;
+    cl_uint bounce_limit;
+};
+
+}
+
+
 void init_render(
     const cl::Context& context, const cl::CommandQueue& queue, const cl::Program& program, cl::Kernel& kernel,
-    cl::Buffer& pixels_d, std::vector<rt::clScene>& scenes, rt::RendererConfig& config
+    cl::Buffer& pixels_d, std::vector<rt::CompiledScene>& scenes, rt::RendererConfig& config
 ) {
     auto start = std::chrono::high_resolution_clock::now();
     {
@@ -49,14 +60,13 @@ void init_render(
 
 void render_test_scene(
     const cl::CommandQueue& queue, cl::Kernel& kernel,
-    const rt::clScene& scene, const rt::RendererConfig& config,
+    const rt::CompiledScene& scene, const rt::RendererConfig& config,
     const cl::Buffer& pixels_d, std::vector<glm::vec4>& pixels_h
 ) {
     auto start = std::chrono::high_resolution_clock::now();
     {
-        kernel.setArg(1, sizeof(rt::clScene), &scene);
-        rt::clRendererConfig config_ = rt::to_clRendererConfig(config);
-        kernel.setArg(2, sizeof(rt::clRendererConfig), &config_);
+        kernel.setArg(1, sizeof(rt::CompiledScene), &scene);
+        kernel.setArg(2, sizeof(rt::RendererConfig), &config);
 
         queue.enqueueNDRangeKernel(
             kernel,
@@ -129,7 +139,7 @@ int main() {
     std::vector<glm::vec4> out(IMAGE_WIDTH*IMAGE_HEIGHT, glm::vec4(0, 1, 0, 1));
     cl::Kernel kernel;
     cl::Buffer pixels_d;
-    std::vector<rt::clScene> scenes;
+    std::vector<rt::CompiledScene> scenes;
     rt::RendererConfig config;
     init_render(context, queue, program, kernel, pixels_d, scenes, config);
 
