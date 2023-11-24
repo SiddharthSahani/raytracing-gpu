@@ -42,7 +42,8 @@ void init_render(
         scenes = {
             create_scene_1(),
             create_scene_2(),
-            create_scene_3()
+            create_scene_3(),
+            create_scene_4()
         };
 
         kernel = cl::Kernel(program, "renderScene");

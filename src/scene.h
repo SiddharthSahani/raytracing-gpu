@@ -63,6 +63,26 @@ class Scene {
 
 
 CompiledScene Scene::compile(bool* success) const {
+    std::vector<const Material*> unique_materials;
+    std::vector<uint32_t> material_indexes(m_objects.size());
+
+    auto find_mat = [&](const Material* ptr) {
+        return std::find(unique_materials.begin(), unique_materials.end(), ptr);
+    };
+
+    // referencing same index if material is already being used
+    for (int idx = 0; idx < m_objects.size(); idx++) {
+        const Material* mat_ptr = m_objects[idx].material.get();
+
+        auto it = find_mat(mat_ptr);
+        if (it == unique_materials.end()) {
+            unique_materials.push_back(mat_ptr);
+            material_indexes[idx] = unique_materials.size() - 1;
+        } else {
+            material_indexes[idx] = it - unique_materials.begin();
+        }
+    }
+
     bool valid = true;
 
     // number of objects/materials exceeds the limit
@@ -70,8 +90,8 @@ CompiledScene Scene::compile(bool* success) const {
         printf("ERRROR: Number of objects (%d) exceeds max object count (%d)\n", m_objects.size(), SCENE_MAX_OBJECTS);
         valid = false;
     }
-    if (m_objects.size() > SCENE_MAX_MATERIALS) {
-        printf("ERROR: Number of  materials (%d) exceeds max material count (%d)\n", m_objects.size(), SCENE_MAX_MATERIALS);
+    if (unique_materials.size() > SCENE_MAX_MATERIALS) {
+        printf("ERROR: Number of unique materials (%d) exceeds max material count (%d)\n", unique_materials.size(), SCENE_MAX_MATERIALS);
         valid = false;
     }
 
@@ -81,10 +101,10 @@ CompiledScene Scene::compile(bool* success) const {
     if (valid) {
         for (int i = 0; i < m_objects.size(); i++) {
             scene.objects[i] = internal::convert(m_objects[i]);
-            scene.objects[i].material_idx = i;
+            scene.objects[i].material_idx = material_indexes[i];
         }
-        for (int i = 0; i < m_objects.size(); i++) {
-            scene.materials[i] = *m_objects[i].material;
+        for (int i = 0; i < unique_materials.size(); i++) {
+            scene.materials[i] = *unique_materials[i];
         }
         scene.sky_color = {m_sky_color.r, m_sky_color.g, m_sky_color.b, 1.0f};
         scene.num_objects = m_objects.size();

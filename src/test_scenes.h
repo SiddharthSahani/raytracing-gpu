@@ -53,3 +53,24 @@ rt::CompiledScene create_scene_3() {
 
     return scene.compile(nullptr);
 }
+
+
+rt::CompiledScene create_scene_4() {
+    auto red = rt::createMaterial({1.0f, 0.3f, 0.3f}, 0.7f);
+    auto green = rt::createMaterial({0.3f, 1.0f, 0.3f}, 0.0f);
+    auto grey = rt::createMaterial({0.6f, 0.6f, 0.6f}, 0.9f);
+
+    auto sph1 = rt::createSphere({ 0.0f, 0.0f, -0.8f}, 0.9f, red);
+    auto sph2 = rt::createSphere({-2.0f, 0.0f, 0.0f}, 0.7f, grey);
+    auto sph3 = rt::createSphere({ 2.0f, 0.0f, 0.0f}, 0.7f, grey);
+    auto ground = rt::createSphere({0.0f, -101.0f, 0.0f}, 100.0f, green);
+
+    rt::Scene scene;
+    scene.addObject(sph1);
+    scene.addObject(sph2);
+    scene.addObject(sph3);
+    scene.addObject(ground);
+    scene.setSkyColor(glm::vec3(255, 255, 255) / 255.0f);
+
+    return scene.compile(nullptr);
+}
