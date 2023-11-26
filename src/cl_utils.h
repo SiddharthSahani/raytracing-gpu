@@ -4,6 +4,7 @@
 #include <CL/opencl.hpp>
 #include <vector>
 #include <fstream>
+#include <sstream>
 
 
 bool get_device(cl::Device& selected_device) {
@@ -72,18 +73,35 @@ std::string read_file(const char* filepath) {
 void create_opencl_objects(const cl::Device& device, cl::Context& context, cl::CommandQueue& queue, cl::Program& program) {
     context = cl::Context(device);
     queue = cl::CommandQueue(context, device);
-
-    std::string program_string = read_file("kernels/renderer.cl");
-    program = cl::Program(program_string);
 }
 
 
-bool build_program(const cl::Program& program, const cl::Device& device) {
-    if (program.build("")) {
+// Temp struct to make things work
+struct TempStruct {
+    cl_uint sample_count;
+    cl_uint bounce_limit;
+};
+
+bool build_program(cl::Program& program, const cl::Device& device, const TempStruct& config) {
+    std::stringstream stream;
+    stream << "-DCONFIG__SAMPLE_COUNT=" << config.sample_count << " ";
+    stream << "-DCONFIG__BOUNCE_LIMIT=" << config.bounce_limit << " ";
+
+    std::string program_build_options = stream.str();
+    printf("Build-Options: %s\n", program_build_options.c_str());
+
+    std::string program_string = read_file("kernels/renderer.cl");
+    program = cl::Program(program_string);
+
+    printf("Building Cl Program\r");
+
+    if (program.build(program_build_options.c_str())) {
         printf("Unable to build OpenCl program\n");
         std::string build_log = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
         printf("Build Log:\n%s\n", build_log.c_str());
         return false;
+    } else {
+        printf("Built Cl Program\n");
     }
 
     return true;

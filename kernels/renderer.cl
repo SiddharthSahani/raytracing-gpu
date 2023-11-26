@@ -1,4 +1,12 @@
 
+#ifndef CONFIG__SAMPLE_COUNT
+    #define CONFIG__SAMPLE_COUNT 1
+#endif
+#ifndef CONFIG__BOUNCE_LIMIT
+    #define CONFIG__BOUNCE_LIMIT 1
+#endif
+
+
 #include "kernels/common.h"
 #include "kernels/random.h"
 #include "kernels/objects.h"
@@ -42,11 +50,11 @@ rt_HitRecord traceRay(const rt_Ray* ray, local const rt_Scene* scene) {
 }
 
 
-float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed, local const rt_Config* config) {
+float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed) {
     float3 light = {0.0f, 0.0f, 0.0f};
     float3 contribution = {1.0f, 1.0f, 1.0f};
 
-    for (int i = 0; i < config->bounce_limit; i++) {
+    for (int i = 0; i < CONFIG__BOUNCE_LIMIT; i++) {
         rng_seed += i * i * i;
         rt_HitRecord record = traceRay(&ray, scene);
 
@@ -69,17 +77,11 @@ float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed, local c
 }
 
 
-kernel void renderScene(
-    const rt_Camera camera,
-    const rt_Scene _scene, const rt_Config _config,
-    global float4* out
-) {
+kernel void renderScene(const rt_Camera camera, const rt_Scene _scene, global float4* out) {
     local rt_Scene scene;
-    local rt_Config config;
 
     if (get_local_id(0) == 0) {
         scene = _scene;
-        config = _config;
     }
     barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -91,12 +93,11 @@ kernel void renderScene(
 
     rt_Ray ray = getRay(&camera, pixel_idx);
 
-    const int frames = config.sample_count;
-    for (int frame_idx = 0; frame_idx < frames; frame_idx++) {
+    for (int frame_idx = 0; frame_idx < CONFIG__SAMPLE_COUNT; frame_idx++) {
         rng_seed += frame_idx * 32421;
-        accumulated_color += clamp(perPixel(ray, &scene, &rng_seed, &config), 0.0f, 1.0f);
+        accumulated_color += clamp(perPixel(ray, &scene, &rng_seed), 0.0f, 1.0f);
     }
 
-    out[pixel_idx].xyz = accumulated_color / frames;
+    out[pixel_idx].xyz = accumulated_color / CONFIG__SAMPLE_COUNT;
     out[pixel_idx].w = 1.0f;
 }

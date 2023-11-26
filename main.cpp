@@ -39,7 +39,7 @@ rt::RendererConfig config;
 
 
 void recreate_kernel() {
-    build_program(vars::cl_program_obj, vars::cl_device_obj);
+    build_program(vars::cl_program_obj, vars::cl_device_obj, {vars::config.sample_count, vars::config.bounce_limit});
 
     glm::vec3 camera_position = {0, 0, 6};
     glm::vec3 camera_direction = {0, 0, -1};
@@ -47,7 +47,7 @@ void recreate_kernel() {
 
     vars::cl_kernel_obj = cl::Kernel(vars::cl_program_obj, "renderScene");
     vars::cl_kernel_obj.setArg(0, sizeof(rt::clCamera), &camera);
-    vars::cl_kernel_obj.setArg(3, vars::pixels_d);
+    vars::cl_kernel_obj.setArg(2, vars::pixels_d);
 }
 
 
@@ -55,7 +55,7 @@ void init_render() {
     auto start = std::chrono::high_resolution_clock::now();
     {
         vars::config = rt::RendererConfig{
-            .sample_count = 32,
+            .sample_count = 128,
             .bounce_limit = 5
         };
 
@@ -80,7 +80,6 @@ void render_test_scene(glm::vec4* out) {
     auto start = std::chrono::high_resolution_clock::now();
     {
         vars::cl_kernel_obj.setArg(1, sizeof(rt::CompiledScene), &vars::scenes[vars::cur_scene_idx]);
-        vars::cl_kernel_obj.setArg(2, sizeof(rt::RendererConfig), &vars::config);
 
         vars::cl_queue_obj.enqueueNDRangeKernel(
             vars::cl_kernel_obj,
@@ -115,20 +114,30 @@ bool check_scene_change() {
 
 
 void change_config() {
+    bool changed = false;
+
     if (IsKeyDown(KEY_S) && IsKeyPressed(KEY_EQUAL)) {
         vars::config.sample_count *= 1.5;
+        changed = true;
     }
     if (IsKeyDown(KEY_S) && IsKeyPressed(KEY_MINUS)) {
         vars::config.sample_count /= 1.5;
         if (vars::config.sample_count < 1) { vars::config.sample_count = 1; }
+        changed = true;
     }
 
     if (IsKeyDown(KEY_B) && IsKeyPressed(KEY_EQUAL)) {
         vars::config.bounce_limit++;
+        changed = true;
     }
     if (IsKeyDown(KEY_B) && IsKeyPressed(KEY_MINUS)) {
         vars::config.bounce_limit--;
         if (vars::config.bounce_limit < 1) { vars::config.bounce_limit = 1; }
+        changed = true;
+    }
+
+    if (changed) {
+        recreate_kernel();
     }
 }
 
@@ -159,7 +168,7 @@ int main() {
     while (!WindowShouldClose()) {
         if (check_scene_change()) {
             render_test_scene(out.data());
-            UpdateTexture(texture, out.data());            
+            UpdateTexture(texture, out.data());
         }
 
         change_config();
