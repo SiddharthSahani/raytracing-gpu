@@ -21,36 +21,54 @@ struct RendererConfig {
 
 }
 
+// NOTE: temporary, to not deal with argument passing stuff
+namespace vars {
 
-void init_render(
-    const cl::Context& context, const cl::CommandQueue& queue, const cl::Program& program, cl::Kernel& kernel,
-    cl::Buffer& pixels_d, std::vector<rt::CompiledScene>& scenes, rt::RendererConfig& config
-) {
+cl::Device cl_device_obj;
+cl::Context cl_context_obj;
+cl::CommandQueue cl_queue_obj;
+cl::Program cl_program_obj;
+cl::Kernel cl_kernel_obj;
+cl::Buffer pixels_d;
+
+std::vector<rt::CompiledScene> scenes;
+int cur_scene_idx;
+rt::RendererConfig config;
+
+}
+
+
+void recreate_kernel() {
+    build_program(vars::cl_program_obj, vars::cl_device_obj);
+
+    glm::vec3 camera_position = {0, 0, 6};
+    glm::vec3 camera_direction = {0, 0, -1};
+    rt::clCamera camera = rt::create_camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT}, camera_position, camera_direction);
+
+    vars::cl_kernel_obj = cl::Kernel(vars::cl_program_obj, "renderScene");
+    vars::cl_kernel_obj.setArg(0, sizeof(rt::clCamera), &camera);
+    vars::cl_kernel_obj.setArg(3, vars::pixels_d);
+}
+
+
+void init_render() {
     auto start = std::chrono::high_resolution_clock::now();
     {
-        glm::vec3 camera_position = {0, 0, 6};
-        glm::vec3 camera_direction = {0, 0, -1};
-        rt::clCamera camera = rt::create_camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT}, camera_position, camera_direction);
-
-        config = rt::RendererConfig{
+        vars::config = rt::RendererConfig{
             .sample_count = 32,
             .bounce_limit = 5
         };
 
-        pixels_d = cl::Buffer(context, CL_MEM_WRITE_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(cl_float4));
+        vars::pixels_d = cl::Buffer(vars::cl_context_obj, CL_MEM_WRITE_ONLY, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(cl_float4));
 
-        scenes = {
+        vars::scenes = {
             create_scene_1(),
             create_scene_2(),
             create_scene_3(),
             create_scene_4()
         };
 
-        kernel = cl::Kernel(program, "renderScene");
-        kernel.setArg(0, sizeof(rt::clCamera), &camera);
-        // kernel.setArg(1, sizeof(rt::clScene), &scene);
-        // kernel.setArg(2, sizeof(rt::RendererConfig), &config);
-        kernel.setArg(3, pixels_d);
+        recreate_kernel();
     }
     auto stop = std::chrono::high_resolution_clock::now();
     auto tt_ns = (stop - start).count();
@@ -58,25 +76,21 @@ void init_render(
 }
 
 
-void render_test_scene(
-    const cl::CommandQueue& queue, cl::Kernel& kernel,
-    const rt::CompiledScene& scene, const rt::RendererConfig& config,
-    const cl::Buffer& pixels_d, std::vector<glm::vec4>& pixels_h
-) {
+void render_test_scene(glm::vec4* out) {
     auto start = std::chrono::high_resolution_clock::now();
     {
-        kernel.setArg(1, sizeof(rt::CompiledScene), &scene);
-        kernel.setArg(2, sizeof(rt::RendererConfig), &config);
+        vars::cl_kernel_obj.setArg(1, sizeof(rt::CompiledScene), &vars::scenes[vars::cur_scene_idx]);
+        vars::cl_kernel_obj.setArg(2, sizeof(rt::RendererConfig), &vars::config);
 
-        queue.enqueueNDRangeKernel(
-            kernel,
+        vars::cl_queue_obj.enqueueNDRangeKernel(
+            vars::cl_kernel_obj,
             cl::NullRange,
             cl::NDRange(IMAGE_WIDTH * IMAGE_HEIGHT),
             cl::NullRange
         );
-        queue.finish();
+        vars::cl_queue_obj.finish();
 
-        queue.enqueueReadBuffer(pixels_d, true, 0, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(glm::vec4), pixels_h.data());
+        vars::cl_queue_obj.enqueueReadBuffer(vars::pixels_d, true, 0, IMAGE_WIDTH*IMAGE_HEIGHT*sizeof(glm::vec4), out);
     }
     auto stop = std::chrono::high_resolution_clock::now();
     auto tt_ns = (stop - start).count();
@@ -84,15 +98,15 @@ void render_test_scene(
 }
 
 
-bool check_scene_change(int& cur_scene_idx, int scene_count) {
+bool check_scene_change() {
     if (IsKeyDown(KEY_C) && IsKeyPressed(KEY_LEFT)) {
-        cur_scene_idx--;
-        if (cur_scene_idx < 0) { cur_scene_idx = scene_count - 1; }
+        vars::cur_scene_idx--;
+        if (vars::cur_scene_idx < 0) { vars::cur_scene_idx = vars::scenes.size() - 1; }
         return true;
     }
     if (IsKeyDown(KEY_C) && IsKeyPressed(KEY_RIGHT)) {
-        cur_scene_idx++;
-        if (cur_scene_idx == scene_count) { cur_scene_idx = 0; }
+        vars::cur_scene_idx++;
+        if (vars::cur_scene_idx == vars::scenes.size()) { vars::cur_scene_idx = 0; }
         return true;
     }
 
@@ -100,51 +114,40 @@ bool check_scene_change(int& cur_scene_idx, int scene_count) {
 }
 
 
-void change_config(rt::RendererConfig& config) {
+void change_config() {
     if (IsKeyDown(KEY_S) && IsKeyPressed(KEY_EQUAL)) {
-        config.sample_count *= 1.5;
+        vars::config.sample_count *= 1.5;
     }
     if (IsKeyDown(KEY_S) && IsKeyPressed(KEY_MINUS)) {
-        config.sample_count /= 1.5;
-        if (config.sample_count < 1) { config.sample_count = 1; }
+        vars::config.sample_count /= 1.5;
+        if (vars::config.sample_count < 1) { vars::config.sample_count = 1; }
     }
 
     if (IsKeyDown(KEY_B) && IsKeyPressed(KEY_EQUAL)) {
-        config.bounce_limit++;
+        vars::config.bounce_limit++;
     }
     if (IsKeyDown(KEY_B) && IsKeyPressed(KEY_MINUS)) {
-        config.bounce_limit--;
-        if (config.bounce_limit < 1) { config.bounce_limit = 1; }
+        vars::config.bounce_limit--;
+        if (vars::config.bounce_limit < 1) { vars::config.bounce_limit = 1; }
     }
 }
 
 
 int main() {
-    cl::Device device;
-    printf("OpenCl device selected completed: %d\n", get_device(device));
-    print_device_info(device);
+    printf("OpenCl device selected completed: %d\n", get_device(vars::cl_device_obj));
+    print_device_info(vars::cl_device_obj);
 
-    cl::Context context;
-    cl::CommandQueue queue;
-    cl::Program program;
-    create_opencl_objects(device, context, queue, program);
-    if (!build_program(program, device)) {
-        return -1;
-    }
+    create_opencl_objects(vars::cl_device_obj, vars::cl_context_obj, vars::cl_queue_obj, vars::cl_program_obj);
 
     SetTraceLogLevel(LOG_WARNING);
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "OpenCl with raylib");
     SetTargetFPS(30);
     
     std::vector<glm::vec4> out(IMAGE_WIDTH*IMAGE_HEIGHT, glm::vec4(0, 1, 0, 1));
-    cl::Kernel kernel;
-    cl::Buffer pixels_d;
-    std::vector<rt::CompiledScene> scenes;
-    rt::RendererConfig config;
-    init_render(context, queue, program, kernel, pixels_d, scenes, config);
+    init_render();
 
     int cur_scene_idx = 0;
-    render_test_scene(queue, kernel, scenes[cur_scene_idx], config, pixels_d, out);
+    render_test_scene(out.data());
 
     Image image = GenImageGradientRadial(IMAGE_WIDTH, IMAGE_HEIGHT, 0.1f, RAYWHITE, BLACK);
     ImageFormat(&image, PIXELFORMAT_UNCOMPRESSED_R32G32B32A32);
@@ -154,15 +157,15 @@ int main() {
     UpdateTexture(texture, out.data());
 
     while (!WindowShouldClose()) {
-        if (check_scene_change(cur_scene_idx, scenes.size())) {
-            render_test_scene(queue, kernel, scenes[cur_scene_idx], config, pixels_d, out);
+        if (check_scene_change()) {
+            render_test_scene(out.data());
             UpdateTexture(texture, out.data());            
         }
 
-        change_config(config);
+        change_config();
         if (IsKeyPressed(KEY_SPACE)) {
-            printf("Config:\n  Samples: %d\n  Bounces: %d\n", config.sample_count, config.bounce_limit);
-            render_test_scene(queue, kernel, scenes[cur_scene_idx], config, pixels_d, out);
+            printf("Config:\n  Samples: %d\n  Bounces: %d\n", vars::config.sample_count, vars::config.bounce_limit);
+            render_test_scene(out.data());
             UpdateTexture(texture, out.data());
         }
 

@@ -79,9 +79,7 @@ void create_opencl_objects(const cl::Device& device, cl::Context& context, cl::C
 
 
 bool build_program(const cl::Program& program, const cl::Device& device) {
-    std::string program_build_options = "";
-
-    if (program.build(program_build_options.c_str())) {
+    if (program.build("")) {
         printf("Unable to build OpenCl program\n");
         std::string build_log = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(device);
         printf("Build Log:\n%s\n", build_log.c_str());
