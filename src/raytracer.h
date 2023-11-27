@@ -13,7 +13,9 @@ namespace rt {
 
 struct Camera {};
 struct Scene {};
-struct Config {};
+struct Config {
+    bool operator!=(const Config& other) const;
+};
 
 
 struct CL_Objects {
@@ -25,8 +27,10 @@ struct CL_Objects {
 
 
 bool chooseClDevice(cl::Device& device);
-bool buildClProgram(cl::Program& program);
 std::string getClProgramSource();
+std::string makeProgramBuildFlags(const Config& config);
+
+Config DEFAULT_CONFIG;
 
 
 class Raytracer {
@@ -38,22 +42,24 @@ class Raytracer {
 
     private:
         void initializeClMembers();
-        void makeClKernel();
+        void makeClKernel(const Config& config);
         void createPixelBuffer();
 
     private:
         uint32_t m_viewportWidth, m_viewportHeight;
         CL_Objects m_cl;
         cl::Buffer m_pixelBuffer;
+        Config m_lastConfig; // to not rebuild the cl program again
 
 };
 
 
 Raytracer::Raytracer() {
     initializeClMembers();
-    makeClKernel();
+    makeClKernel(DEFAULT_CONFIG);
     createPixelBuffer();
 }
+
 
 void Raytracer::initializeClMembers() {
     if (!chooseClDevice(m_cl.device)) {
@@ -65,14 +71,21 @@ void Raytracer::initializeClMembers() {
     m_cl.queue = cl::CommandQueue(m_cl.context, m_cl.device);
 }
 
-void Raytracer::makeClKernel() {
-    std::string source;
+
+void Raytracer::makeClKernel(const Config& config) {
+    std::string source = getClProgramSource();
     cl::Program program(source);
 
-    program.build();
+    std::string buildFlags = makeProgramBuildFlags(config);
+
+    if (program.build(buildFlags.c_str())) {
+        RT_LOG("Error while building Cl program\n");
+        RT_LOG("Build Log:\n%s\n", program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_cl.device).c_str());
+    }
 
     m_cl.kernel = cl::Kernel(program, "renderScene");
 }
+
 
 void Raytracer::createPixelBuffer() {
     int err;
@@ -86,5 +99,30 @@ void Raytracer::createPixelBuffer() {
 }
 
 
+void Raytracer::renderScene(const Scene& scene, const Camera& camera, const Config& config) {
+    if (config != m_lastConfig) {
+        m_lastConfig = config;
+        makeClKernel(config);
+    }
+
+    m_cl.kernel.setArg(0, sizeof(Camera), &camera);
+    m_cl.kernel.setArg(1, sizeof(Scene), &scene);
+    m_cl.kernel.setArg(2, m_pixelBuffer);
+
+    m_cl.queue.enqueueNDRangeKernel(
+        m_cl.kernel,
+        cl::NullRange,
+        cl::NDRange(m_viewportWidth * m_viewportHeight),
+        cl::NullRange
+    );
+
+    m_cl.queue.finish();
+}
+
+
+void Raytracer::readPixels(void* out) const {
+    uint32_t bufferSize = m_viewportWidth * m_viewportHeight * sizeof(float) * 4;
+    m_cl.queue.enqueueReadBuffer(m_pixelBuffer, true, 0, bufferSize, out);
+}
 
 }
