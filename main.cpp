@@ -65,7 +65,8 @@ void init_render() {
             create_scene_1(),
             create_scene_2(),
             create_scene_3(),
-            create_scene_4()
+            create_scene_4(),
+            create_scene_5()
         };
 
         recreate_kernel();
