@@ -74,3 +74,24 @@ rt::CompiledScene create_scene_4() {
 
     return scene.compile(nullptr);
 }
+
+
+rt::CompiledScene create_scene_5() {
+    auto mat_ground = rt::createMaterial({0.8f, 0.8f, 0.0f}, 0.0f);
+    auto mat_center = rt::createMaterial({0.7f, 0.3f, 0.3f}, 0.0f);
+    auto mat_side = rt::createMaterial({0.8f, 0.8f, 0.8f}, 1.0f);
+
+    auto sph1 = rt::createSphere({ 0.0f, 0.0f, 3.5f}, 0.5f, mat_center);
+    auto sph2 = rt::createSphere({-1.0f, 0.0f, 4.0f}, 0.5f, mat_side);
+    auto sph3 = rt::createSphere({ 1.0f, 0.0f, 4.0f}, 0.5f, mat_side);
+    auto ground = rt::createSphere({0.0f, -101.0f, -0.0f}, 100.5f, mat_ground);
+
+    rt::Scene scene;
+    scene.addObject(sph1);
+    scene.addObject(sph2);
+    scene.addObject(sph3);
+    scene.addObject(ground);
+    scene.setSkyColor({0.5f, 0.7f, 1.0f});
+
+    return scene.compile(nullptr);
+}
