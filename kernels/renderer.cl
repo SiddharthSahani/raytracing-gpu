@@ -95,9 +95,10 @@ kernel void renderScene(const rt_Camera camera, const rt_Scene _scene, global fl
 
     for (int frame_idx = 0; frame_idx < CONFIG__SAMPLE_COUNT; frame_idx++) {
         rng_seed += frame_idx * 32421;
-        accumulated_color += clamp(perPixel(ray, &scene, &rng_seed), 0.0f, 1.0f);
+        accumulated_color += perPixel(ray, &scene, &rng_seed);
     }
+    accumulated_color = accumulated_color / CONFIG__SAMPLE_COUNT;
 
-    out[pixel_idx].xyz = accumulated_color / CONFIG__SAMPLE_COUNT;
+    out[pixel_idx].xyz = accumulated_color;
     out[pixel_idx].w = 1.0f;
 }
