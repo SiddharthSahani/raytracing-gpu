@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include "src/raytracer/material.h"
-#include "src/raytracer/objects.h"
+#include "raytracer/material.h"
+#include "raytracer/objects.h"
 #include <vector>
 
 const int SCENE_MAX_OBJECTS = 5;
