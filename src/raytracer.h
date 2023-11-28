@@ -2,8 +2,11 @@
 #pragma once
 
 #include "src/cl_utils.h"
+#include "src/raytracer/scene.h"
 
-#define RT_LOG(text, ...)
+#ifndef RT_LOG
+    #define RT_LOG(text, ...)
+#endif
 
 
 namespace rt {
@@ -12,7 +15,7 @@ namespace rt {
 // formats: R32G32B32A32? , R8G8B8?
 
 struct Camera {};
-struct Scene {};
+
 struct Config {
     bool operator!=(const Config& other) const;
 };
@@ -35,10 +38,17 @@ Config DEFAULT_CONFIG;
 
 class Raytracer {
 
+    enum class PixelFormat {
+        R8G8B8A8,     // (4x1= 4) ints
+        R32G32B32A32, // (4*4=16) flots
+    };
+
     public:
-        Raytracer();
-        void renderScene(const Scene& scene, const Camera& camera, const Config& config);
+        Raytracer(PixelFormat format);
+        void renderScene(const CompiledScene& scene, const Camera& camera, const Config& config);
         void readPixels(void* out) const;
+        uint32_t getPixelBufferSize() const;
+        PixelFormat getPixelFormat() const { return m_pixelFormat; }
 
     private:
         void initializeClMembers();
@@ -47,14 +57,16 @@ class Raytracer {
 
     private:
         uint32_t m_viewportWidth, m_viewportHeight;
+        PixelFormat m_pixelFormat;
         CL_Objects m_cl;
         cl::Buffer m_pixelBuffer;
-        Config m_lastConfig; // to not rebuild the cl program again
+        Config m_lastConfig; // to not rebuild the cl program again for same config
 
 };
 
 
-Raytracer::Raytracer() {
+Raytracer::Raytracer(PixelFormat format) {
+    m_pixelFormat = format;
     initializeClMembers();
     makeClKernel(DEFAULT_CONFIG);
     createPixelBuffer();
@@ -90,7 +102,7 @@ void Raytracer::makeClKernel(const Config& config) {
 void Raytracer::createPixelBuffer() {
     int err;
 
-    uint32_t bufferSize = m_viewportWidth * m_viewportHeight * sizeof(float) * 4;
+    uint32_t bufferSize = getPixelBufferSize();
     m_pixelBuffer = cl::Buffer(m_cl.context, CL_MEM_READ_ONLY, bufferSize, nullptr, &err);
 
     if (err) {
@@ -99,14 +111,14 @@ void Raytracer::createPixelBuffer() {
 }
 
 
-void Raytracer::renderScene(const Scene& scene, const Camera& camera, const Config& config) {
+void Raytracer::renderScene(const CompiledScene& scene, const Camera& camera, const Config& config) {
     if (config != m_lastConfig) {
         m_lastConfig = config;
         makeClKernel(config);
     }
 
     m_cl.kernel.setArg(0, sizeof(Camera), &camera);
-    m_cl.kernel.setArg(1, sizeof(Scene), &scene);
+    m_cl.kernel.setArg(1, sizeof(CompiledScene), &scene);
     m_cl.kernel.setArg(2, m_pixelBuffer);
 
     m_cl.queue.enqueueNDRangeKernel(
@@ -121,8 +133,27 @@ void Raytracer::renderScene(const Scene& scene, const Camera& camera, const Conf
 
 
 void Raytracer::readPixels(void* out) const {
-    uint32_t bufferSize = m_viewportWidth * m_viewportHeight * sizeof(float) * 4;
+    uint32_t bufferSize = getPixelBufferSize();
     m_cl.queue.enqueueReadBuffer(m_pixelBuffer, true, 0, bufferSize, out);
+}
+
+
+uint32_t Raytracer::getPixelBufferSize() const {
+    uint32_t pixelSize;
+
+    switch (m_pixelFormat) {
+        case PixelFormat::R8G8B8A8:
+            pixelSize = 4;
+            break;
+        case PixelFormat::R32G32B32A32:
+            pixelSize = 16;
+            break;
+        default:
+            RT_LOG("Invalid pixel format");
+            break;
+    }
+
+    return m_viewportWidth * m_viewportHeight * pixelSize;
 }
 
 }
