@@ -14,6 +14,11 @@ namespace rt {
 // modes: once? , realtime? , video?
 // formats: R32G32B32A32? , R8G8B8?
 
+enum class PixelFormat {
+    R8G8B8A8,     // (4x1= 4) ints
+    R32G32B32A32, // (4*4=16) floats
+};
+
 struct Camera {};
 
 struct Config {
@@ -38,17 +43,14 @@ Config DEFAULT_CONFIG;
 
 class Raytracer {
 
-    enum class PixelFormat {
-        R8G8B8A8,     // (4x1= 4) ints
-        R32G32B32A32, // (4*4=16) flots
-    };
-
     public:
-        Raytracer(PixelFormat format);
+        Raytracer(PixelFormat format, uint32_t viewportWidth, uint32_t viewportHeight);
         void renderScene(const CompiledScene& scene, const Camera& camera, const Config& config);
         void readPixels(void* out) const;
         uint32_t getPixelBufferSize() const;
         PixelFormat getPixelFormat() const { return m_pixelFormat; }
+        uint32_t getViewportWidth() const { return m_viewportWidth; }
+        uint32_t getViewportHeight() const { return m_viewportHeight; }
 
     private:
         void initializeClMembers();
@@ -65,8 +67,10 @@ class Raytracer {
 };
 
 
-Raytracer::Raytracer(PixelFormat format) {
+Raytracer::Raytracer(PixelFormat format, uint32_t viewportWidth, uint32_t viewportHeight) {
     m_pixelFormat = format;
+    m_viewportWidth = viewportWidth;
+    m_viewportHeight = viewportHeight;
     initializeClMembers();
     makeClKernel(DEFAULT_CONFIG);
     createPixelBuffer();
