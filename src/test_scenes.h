@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "scene.h"
+#include "src/raytracer/scene.h"
 
 
 rt::CompiledScene create_scene_1() {

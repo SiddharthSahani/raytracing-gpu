@@ -8,27 +8,27 @@
 
 namespace rt {
 
-struct clCamera {
-    cl_float16 inv_view;
-    cl_float16 inv_proj;
+struct Camera {
+    cl_float16 invViewMat;
+    cl_float16 invProjMat;
     cl_float3 position;
-    cl_uint2 image_size;
+    cl_uint2 imageSize;
 };
 
 
-clCamera create_camera(float fov, const glm::ivec2& image_size, const glm::vec3& position, const glm::vec3 direction) {
-    glm::mat4 inv_view = glm::inverse(glm::lookAt(
+Camera create_camera(float fov, const glm::ivec2& imageSize, const glm::vec3& position, const glm::vec3 direction) {
+    glm::mat4 invViewMat = glm::inverse(glm::lookAt(
         position, position + direction, glm::vec3(0, 1, 0)
     ));
-    glm::mat4 inv_proj = glm::inverse(glm::perspectiveFov(
-        glm::radians(fov), (float) image_size.x, (float) image_size.y, 0.1f, 100.0f
+    glm::mat4 invProjMat = glm::inverse(glm::perspectiveFov(
+        glm::radians(fov), (float) imageSize.x, (float) imageSize.y, 0.1f, 100.0f
     ));
 
-    clCamera camera;
-    memcpy(&camera.inv_view, &inv_view, sizeof(float) * 16);
-    memcpy(&camera.inv_proj, &inv_proj, sizeof(float) * 16);
+    Camera camera;
+    memcpy(&camera.invViewMat, &invViewMat, sizeof(float) * 16);
+    memcpy(&camera.invProjMat, &invProjMat, sizeof(float) * 16);
     camera.position = {position.x, position.y, position.z, 0.0f};
-    camera.image_size = {(uint32_t) image_size.x, (uint32_t) image_size.y};
+    camera.imageSize = {(uint32_t) imageSize.x, (uint32_t) imageSize.y};
     return camera;
 }
 

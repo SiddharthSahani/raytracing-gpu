@@ -3,6 +3,8 @@
 
 #include "src/cl_utils.h"
 #include "src/raytracer/scene.h"
+#include "src/raytracer/camera.h"
+#include <sstream>
 
 #ifndef RT_LOG
     #define RT_LOG(text, ...)
@@ -19,10 +21,13 @@ enum class PixelFormat {
     R32G32B32A32, // (4*4=16) floats
 };
 
-struct Camera {};
-
 struct Config {
-    bool operator!=(const Config& other) const;
+    cl_uint sampleCount;
+    cl_uint bounceLimit;
+
+    bool operator!=(const Config& other) const {
+        return (sampleCount != other.sampleCount) | (bounceLimit != other.bounceLimit);
+    }
 };
 
 
@@ -34,11 +39,10 @@ struct CL_Objects {
 };
 
 
-bool chooseClDevice(cl::Device& device);
-std::string getClProgramSource();
-std::string makeProgramBuildFlags(const Config& config);
-
-Config DEFAULT_CONFIG;
+Config DEFAULT_CONFIG = {
+    .sampleCount = 128,
+    .bounceLimit = 5
+};
 
 
 class Raytracer {
@@ -54,8 +58,9 @@ class Raytracer {
 
     private:
         void initializeClMembers();
-        void makeClKernel(const Config& config);
+        void makeClKernel();
         void createPixelBuffer();
+        std::string makeProgramBuildFlags() const;
 
     private:
         uint32_t m_viewportWidth, m_viewportHeight;
@@ -71,8 +76,9 @@ Raytracer::Raytracer(PixelFormat format, uint32_t viewportWidth, uint32_t viewpo
     m_pixelFormat = format;
     m_viewportWidth = viewportWidth;
     m_viewportHeight = viewportHeight;
+    m_lastConfig = DEFAULT_CONFIG;
     initializeClMembers();
-    makeClKernel(DEFAULT_CONFIG);
+    makeClKernel();
     createPixelBuffer();
 }
 
@@ -88,11 +94,11 @@ void Raytracer::initializeClMembers() {
 }
 
 
-void Raytracer::makeClKernel(const Config& config) {
-    std::string source = getClProgramSource();
+void Raytracer::makeClKernel() {
+    std::string source = readFile("kernels/renderer.cl");
     cl::Program program(source);
 
-    std::string buildFlags = makeProgramBuildFlags(config);
+    std::string buildFlags = makeProgramBuildFlags();
 
     if (program.build(buildFlags.c_str())) {
         RT_LOG("Error while building Cl program\n");
@@ -118,7 +124,7 @@ void Raytracer::createPixelBuffer() {
 void Raytracer::renderScene(const CompiledScene& scene, const Camera& camera, const Config& config) {
     if (config != m_lastConfig) {
         m_lastConfig = config;
-        makeClKernel(config);
+        makeClKernel();
     }
 
     m_cl.kernel.setArg(0, sizeof(Camera), &camera);
@@ -158,6 +164,29 @@ uint32_t Raytracer::getPixelBufferSize() const {
     }
 
     return m_viewportWidth * m_viewportHeight * pixelSize;
+}
+
+
+std::string Raytracer::makeProgramBuildFlags() const {
+    std::stringstream stream;
+
+    stream << "-DCONFIG__SAMPLE_COUNT=" << m_lastConfig.sampleCount << " ";
+    stream << "-DCONFIG__BOUNCE_LIMTI=" << m_lastConfig.bounceLimit << " ";
+    
+    switch (m_pixelFormat) {
+        case PixelFormat::R8G8B8A8:
+            stream << "-DPIXEL_FORMAT__R8G8B8A8 ";
+            break;
+        case PixelFormat::R32G32B32A32:
+            stream << "-DPIXEL_FORMAT__R32G32B32A32 ";
+            break;
+        default:
+            RT_LOG("Invalid pixel format: %d defaulting to R32G32B32A32", (int) m_pixelFormat);
+            stream << "-DPIXEL_FORMAT__R32G32B32A32 ";
+            break;
+    }
+
+    return stream.str();
 }
 
 }
