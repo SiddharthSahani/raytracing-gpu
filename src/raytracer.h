@@ -171,7 +171,7 @@ std::string Raytracer::makeProgramBuildFlags() const {
     std::stringstream stream;
 
     stream << "-DCONFIG__SAMPLE_COUNT=" << m_lastConfig.sampleCount << " ";
-    stream << "-DCONFIG__BOUNCE_LIMTI=" << m_lastConfig.bounceLimit << " ";
+    stream << "-DCONFIG__BOUNCE_LIMIT=" << m_lastConfig.bounceLimit << " ";
     
     switch (m_pixelFormat) {
         case PixelFormat::R8G8B8A8:
