@@ -63,6 +63,7 @@ class Raytracer {
         std::string makeProgramBuildFlags() const;
 
     private:
+        bool m_isValid = true;
         uint32_t m_viewportWidth, m_viewportHeight;
         PixelFormat m_pixelFormat;
         CL_Objects m_cl;
@@ -86,6 +87,7 @@ Raytracer::Raytracer(PixelFormat format, uint32_t viewportWidth, uint32_t viewpo
 void Raytracer::initializeClMembers() {
     if (!chooseClDevice(m_cl.device)) {
         RT_LOG("Unable to choose Cl Device\n");
+        m_isValid = false;
         return;
     }
 
@@ -100,12 +102,16 @@ void Raytracer::makeClKernel() {
 
     std::string buildFlags = makeProgramBuildFlags();
 
+    RT_LOG("Rebuilding Cl Program with flags: %s\n", buildFlags.c_str());
+
     if (program.build(buildFlags.c_str())) {
         RT_LOG("Error while building Cl program\n");
         RT_LOG("Build Log:\n%s\n", program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_cl.device).c_str());
+        m_isValid = false;
+    } else {
+        RT_LOG("Buit Cl Program successfully\n");
+        m_cl.kernel = cl::Kernel(program, "renderScene");
     }
-
-    m_cl.kernel = cl::Kernel(program, "renderScene");
 }
 
 
@@ -116,12 +122,19 @@ void Raytracer::createPixelBuffer() {
     m_pixelBuffer = cl::Buffer(m_cl.context, CL_MEM_READ_ONLY, bufferSize, nullptr, &err);
 
     if (err) {
-        RT_LOG("Unable to allocate buffer of size %.3f MB\n", (float) bufferSize / (1024*1024));
+        RT_LOG("Unable to allocate buffer of size %.3f MB [ErrCode: %d]\n", (float) bufferSize / (1024*1024), err);
+        m_isValid = false;
+    } else {
+        RT_LOG("Allocated buffer of size %.3f MB\n", (float) bufferSize / (1024*1024));
     }
 }
 
 
 void Raytracer::renderScene(const CompiledScene& scene, const Camera& camera, const Config& config) {
+    if (!m_isValid) {        
+        RT_LOG("Can not render scene as this instance is not valid\n");
+        return;
+    }
     if (config != m_lastConfig) {
         m_lastConfig = config;
         makeClKernel();
@@ -159,7 +172,7 @@ uint32_t Raytracer::getPixelBufferSize() const {
             pixelSize = 16;
             break;
         default:
-            RT_LOG("Invalid pixel format");
+            RT_LOG("Invalid pixel format encountered in `Raytracer::getPixelBufferSize()`\n");
             break;
     }
 
@@ -181,7 +194,7 @@ std::string Raytracer::makeProgramBuildFlags() const {
             stream << "-DPIXEL_FORMAT__R32G32B32A32 ";
             break;
         default:
-            RT_LOG("Invalid pixel format: %d defaulting to R32G32B32A32", (int) m_pixelFormat);
+            RT_LOG("Invalid pixel format: %d defaulting to R32G32B32A32\n", (int) m_pixelFormat);
             stream << "-DPIXEL_FORMAT__R32G32B32A32 ";
             break;
     }
