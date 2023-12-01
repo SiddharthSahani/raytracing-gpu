@@ -52,7 +52,7 @@ int main() {
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Raytracing with OpenCl");
     SetTargetFPS(30);
 
-    rt::Raytracer raytracer(rt::PixelFormat::R32G32B32A32, IMAGE_WIDTH, IMAGE_HEIGHT);
+    rt::Raytracer raytracer(rt::PixelFormat::R8G8B8A8, IMAGE_WIDTH, IMAGE_HEIGHT);
     rt::Renderer renderer(raytracer);
     rt::Camera camera = rt::create_camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT}, {0, 0, 6}, {0, 0, -1});
     rt::CompiledScene scene = create_scene_1();
@@ -68,7 +68,7 @@ int main() {
 
         DrawTextureEx(renderer.get(), {0.0f, 0.0f}, 0.0f, (float) WINDOW_WIDTH/IMAGE_WIDTH, WHITE);
 
-        DrawFPS(10, 10);
+        // DrawFPS(10, 10);
         EndDrawing();
     }
 
