@@ -13,38 +13,18 @@ using namespace std::chrono;
 #define IMAGE_HEIGHT (720/2)
 
 
-#define TIME_FUNCTION(name, func) \
-{\
-    Timer timer(name);\
-    func;\
+#define TIME_FUNCTION(name, func)                       \
+{                                                       \
+    auto startTime = high_resolution_clock::now();      \
+    { func; }                                           \
+    auto stopTime = high_resolution_clock::now();       \
+    auto timeTaken_ns = (stopTime - startTime).count(); \
+    printf(                                             \
+        name " took %f secs (%f ms)\n",                 \
+        (float) timeTaken_ns / 1'000'000'000,           \
+        (float) timeTaken_ns / 1'000'000                \
+    );                                                  \
 }
-
-
-// utility class to time functions
-class Timer {
-
-    public:
-        Timer(const char* timerName) {
-            m_timerName = timerName;
-            m_startTime = high_resolution_clock::now();
-        }
-        ~Timer() {
-            auto stopTime = high_resolution_clock::now();
-            auto timeTaken = stopTime - m_startTime;
-            auto timeTaken_ns = timeTaken.count();
-            printf(
-                "%s took %f secs (%f ms)\n",
-                m_timerName,
-                (float) timeTaken_ns / 1'000'000'000,
-                (float) timeTaken_ns / 1'000'000
-            );
-        }
-
-    private:
-        const char* m_timerName;
-        system_clock::time_point m_startTime;
-
-};
 
 
 int main() {
