@@ -35,7 +35,8 @@ struct CL_Objects {
     cl::Device device;
     cl::Context context;
     cl::CommandQueue queue;
-    cl::Kernel kernel;
+    cl::Kernel renderKernel;
+    cl::Kernel accumulateKernel;
 };
 
 
@@ -51,15 +52,18 @@ class Raytracer {
         Raytracer(PixelFormat format, uint32_t viewportWidth, uint32_t viewportHeight);
         void renderScene(const CompiledScene& scene, const Camera& camera, const Config& config);
         void readPixels(void* out) const;
+        void accumulatePixels();
         uint32_t getPixelBufferSize() const;
+        void resetFrameCount() { m_frameCount = 1; }
         PixelFormat getPixelFormat() const { return m_pixelFormat; }
         uint32_t getViewportWidth() const { return m_viewportWidth; }
         uint32_t getViewportHeight() const { return m_viewportHeight; }
+        uint32_t getFrameCount() const { return m_frameCount; }
 
     private:
         void initializeClMembers();
         void makeClKernel();
-        void createPixelBuffer();
+        void createPixelBuffers();
         std::string makeProgramBuildFlags() const;
 
     private:
@@ -68,7 +72,9 @@ class Raytracer {
         PixelFormat m_pixelFormat;
         CL_Objects m_cl;
         cl::Buffer m_pixelBuffer;
+        cl::Buffer m_accumPixelBuffer;
         Config m_lastConfig; // to not rebuild the cl program again for same config
+        uint32_t m_frameCount = 1;
 
 };
 
@@ -80,7 +86,7 @@ Raytracer::Raytracer(PixelFormat format, uint32_t viewportWidth, uint32_t viewpo
     m_lastConfig = DEFAULT_CONFIG;
     initializeClMembers();
     makeClKernel();
-    createPixelBuffer();
+    createPixelBuffers();
 }
 
 
@@ -97,35 +103,40 @@ void Raytracer::initializeClMembers() {
 
 
 void Raytracer::makeClKernel() {
-    std::string source = readFile("kernels/renderer.cl");
-    cl::Program program(source);
+    std::string mainSource = readFile("kernels/renderer.cl");
+    std::string accumulateSource = readFile("kernels/accumulate.cl");
+    cl::Program mainProgram(mainSource);
+    cl::Program accumulateProgram(accumulateSource);
 
     std::string buildFlags = makeProgramBuildFlags();
 
-    RT_LOG("Rebuilding Cl Program with flags: %s\n", buildFlags.c_str());
+    RT_LOG("(Re)building Cl Program with flags: %s\n", buildFlags.c_str());
 
-    if (program.build(buildFlags.c_str())) {
+    if (mainProgram.build(buildFlags.c_str()) || accumulateProgram.build(buildFlags.c_str())) {
         RT_LOG("Error while building Cl program\n");
-        RT_LOG("Build Log:\n%s\n", program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_cl.device).c_str());
+        RT_LOG("Build Log for main:\n%s\n", mainProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_cl.device).c_str());
+        RT_LOG("Build Log for accumulate:\n%s\n", accumulateProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_cl.device).c_str());
         m_isValid = false;
     } else {
-        RT_LOG("Buit Cl Program successfully\n");
-        m_cl.kernel = cl::Kernel(program, "renderScene");
+        RT_LOG("Built Cl Program successfully\n");
+        m_cl.renderKernel = cl::Kernel(mainProgram, "renderScene");
+        m_cl.accumulateKernel = cl::Kernel(accumulateProgram, "accumulateFrameData");
     }
 }
 
 
-void Raytracer::createPixelBuffer() {
+void Raytracer::createPixelBuffers() {
     int err;
 
     uint32_t bufferSize = getPixelBufferSize();
-    m_pixelBuffer = cl::Buffer(m_cl.context, CL_MEM_READ_ONLY, bufferSize, nullptr, &err);
+    m_pixelBuffer = cl::Buffer(m_cl.context, CL_MEM_READ_WRITE, bufferSize, nullptr, &err);
+    m_accumPixelBuffer = cl::Buffer(m_cl.context, CL_MEM_READ_WRITE, bufferSize, nullptr, &err);
 
     if (err) {
-        RT_LOG("Unable to allocate buffer of size %.3f MB [ErrCode: %d]\n", (float) bufferSize / (1024*1024), err);
+        RT_LOG("Unable to allocate buffers of size 2 * %.3f MB\n", (float) bufferSize / (1024*1024));
         m_isValid = false;
     } else {
-        RT_LOG("Allocated buffer of size %.3f MB\n", (float) bufferSize / (1024*1024));
+        RT_LOG("Allocated buffers of size 2 * %.3f MB\n", (float) bufferSize / (1024*1024));
     }
 }
 
@@ -140,12 +151,13 @@ void Raytracer::renderScene(const CompiledScene& scene, const Camera& camera, co
         makeClKernel();
     }
 
-    m_cl.kernel.setArg(0, sizeof(Camera), &camera);
-    m_cl.kernel.setArg(1, sizeof(CompiledScene), &scene);
-    m_cl.kernel.setArg(2, m_pixelBuffer);
+    m_cl.renderKernel.setArg(0, sizeof(Camera), &camera);
+    m_cl.renderKernel.setArg(1, sizeof(CompiledScene), &scene);
+    m_cl.renderKernel.setArg(2, m_pixelBuffer);
+    m_cl.renderKernel.setArg(3, sizeof(uint32_t), &m_frameCount);
 
     m_cl.queue.enqueueNDRangeKernel(
-        m_cl.kernel,
+        m_cl.renderKernel,
         cl::NullRange,
         cl::NDRange(m_viewportWidth * m_viewportHeight),
         cl::NullRange
@@ -157,9 +169,25 @@ void Raytracer::renderScene(const CompiledScene& scene, const Camera& camera, co
 
 void Raytracer::readPixels(void* out) const {
     uint32_t bufferSize = getPixelBufferSize();
-    m_cl.queue.enqueueReadBuffer(m_pixelBuffer, true, 0, bufferSize, out);
+    m_cl.queue.enqueueReadBuffer(m_accumPixelBuffer, true, 0, bufferSize, out);
 }
 
+void Raytracer::accumulatePixels() {
+    m_cl.accumulateKernel.setArg(0, m_accumPixelBuffer);
+    m_cl.accumulateKernel.setArg(1, m_pixelBuffer);
+    m_cl.accumulateKernel.setArg(2, sizeof(m_frameCount), &m_frameCount);
+
+    m_cl.queue.enqueueNDRangeKernel(
+        m_cl.accumulateKernel,
+        cl::NullRange,
+        cl::NDRange(m_viewportWidth * m_viewportHeight),
+        cl::NullRange
+    );
+
+    m_cl.queue.finish();
+
+    m_frameCount++;
+}
 
 uint32_t Raytracer::getPixelBufferSize() const {
     uint32_t pixelSize;

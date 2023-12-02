@@ -84,7 +84,7 @@ float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed) {
 }
 
 
-kernel void renderScene(const rt_Camera camera, const rt_Scene _scene, global PIXEL_BUFFER__TYPE* out) {
+kernel void renderScene(const rt_Camera camera, const rt_Scene _scene, global PIXEL_BUFFER__TYPE* out, uint initialRngSeed) {
     local rt_Scene scene;
 
     if (get_local_id(0) == 0) {
@@ -94,7 +94,7 @@ kernel void renderScene(const rt_Camera camera, const rt_Scene _scene, global PI
 
     uint pixel_idx = get_global_id(0);
 
-    uint rng_seed = pixel_idx;
+    uint rng_seed = (pixel_idx + 1) * initialRngSeed;
 
     float3 accumulated_color = {0.0f, 0.0f, 0.0f};
 
@@ -106,14 +106,14 @@ kernel void renderScene(const rt_Camera camera, const rt_Scene _scene, global PI
     }
     accumulated_color = accumulated_color / CONFIG__SAMPLE_COUNT;
 
+#ifdef PIXEL_FORMAT__R32G32B32A32
+    out[pixel_idx].xyz = accumulated_color;
+    out[pixel_idx].w = 1.0f;
+#endif
 #ifdef PIXEL_FORMAT__R8G8B8A8
     accumulated_color = clamp(accumulated_color, 0.0f, 1.0f);
     out[pixel_idx].xyz = convert_uchar3(accumulated_color * 255.0f);
     out[pixel_idx].w = 255;
-#endif
-#ifdef PIXEL_FORMAT__R32G32B32A32
-    out[pixel_idx].xyz = accumulated_color;
-    out[pixel_idx].w = 1.0f;
 #endif
 
 }

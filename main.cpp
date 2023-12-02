@@ -43,6 +43,7 @@ int main() {
 
         if (IsKeyPressed(KEY_SPACE)) {
             TIME_FUNCTION("renderScene", raytracer.renderScene(scene, camera, rt::DEFAULT_CONFIG));
+            TIME_FUNCTION("accumulatePixels", raytracer.accumulatePixels());
             renderer.update();
         }
 
