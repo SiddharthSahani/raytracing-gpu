@@ -21,6 +21,13 @@ enum class PixelFormat {
     R32G32B32A32, // (4*4=16) floats
 };
 
+
+enum class RaytracingMode {
+    SINGLE,  // just a single frame
+    MULTIPLE // multiple frames
+};
+
+
 struct Config {
     cl_uint sampleCount;
     cl_uint bounceLimit;
@@ -49,7 +56,7 @@ Config DEFAULT_CONFIG = {
 class Raytracer {
 
     public:
-        Raytracer(PixelFormat format, uint32_t viewportWidth, uint32_t viewportHeight);
+        Raytracer(uint32_t viewportWidth, uint32_t viewportHeight, PixelFormat format = PixelFormat::R32G32B32A32, RaytracingMode mode = RaytracingMode::SINGLE);
         void renderScene(const CompiledScene& scene, const Camera& camera, const Config& config);
         void readPixels(void* out) const;
         void accumulatePixels();
@@ -59,6 +66,7 @@ class Raytracer {
         uint32_t getViewportWidth() const { return m_viewportWidth; }
         uint32_t getViewportHeight() const { return m_viewportHeight; }
         uint32_t getFrameCount() const { return m_frameCount; }
+        bool isValid() const { return m_isValid; }
 
     private:
         void initializeClMembers();
@@ -70,6 +78,7 @@ class Raytracer {
         bool m_isValid = true;
         uint32_t m_viewportWidth, m_viewportHeight;
         PixelFormat m_pixelFormat;
+        RaytracingMode m_mode;
         CL_Objects m_cl;
         cl::Buffer m_pixelBuffer;
         cl::Buffer m_accumPixelBuffer;
@@ -79,10 +88,11 @@ class Raytracer {
 };
 
 
-Raytracer::Raytracer(PixelFormat format, uint32_t viewportWidth, uint32_t viewportHeight) {
-    m_pixelFormat = format;
+Raytracer::Raytracer(uint32_t viewportWidth, uint32_t viewportHeight, PixelFormat format, RaytracingMode mode) {
     m_viewportWidth = viewportWidth;
     m_viewportHeight = viewportHeight;
+    m_pixelFormat = format;
+    m_mode = mode;
     m_lastConfig = DEFAULT_CONFIG;
     initializeClMembers();
     makeClKernel();
@@ -112,10 +122,12 @@ void Raytracer::makeClKernel() {
 
     RT_LOG("(Re)building Cl Program with flags: %s\n", buildFlags.c_str());
 
-    if (mainProgram.build(buildFlags.c_str()) || accumulateProgram.build(buildFlags.c_str())) {
+    if (mainProgram.build(buildFlags.c_str()) || (m_mode == RaytracingMode::MULTIPLE && accumulateProgram.build(buildFlags.c_str()))) {
         RT_LOG("Error while building Cl program\n");
         RT_LOG("Build Log for main:\n%s\n", mainProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_cl.device).c_str());
-        RT_LOG("Build Log for accumulate:\n%s\n", accumulateProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_cl.device).c_str());
+        if (m_mode == RaytracingMode::MULTIPLE) {
+            RT_LOG("Build Log for accumulate:\n%s\n", accumulateProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_cl.device).c_str());
+        }
         m_isValid = false;
     } else {
         RT_LOG("Built Cl Program successfully\n");
@@ -127,16 +139,20 @@ void Raytracer::makeClKernel() {
 
 void Raytracer::createPixelBuffers() {
     int err;
-
     uint32_t bufferSize = getPixelBufferSize();
+
     m_pixelBuffer = cl::Buffer(m_cl.context, CL_MEM_READ_WRITE, bufferSize, nullptr, &err);
-    m_accumPixelBuffer = cl::Buffer(m_cl.context, CL_MEM_READ_WRITE, bufferSize, nullptr, &err);
+    if (m_mode == RaytracingMode::MULTIPLE) {
+        m_accumPixelBuffer = cl::Buffer(m_cl.context, CL_MEM_READ_WRITE, bufferSize, nullptr, &err);
+    }
+
+    uint32_t totalBufferSize = bufferSize * (m_mode == RaytracingMode::SINGLE ? 1 : 2);
 
     if (err) {
-        RT_LOG("Unable to allocate buffers of size 2 * %.3f MB\n", (float) bufferSize / (1024*1024));
+        RT_LOG("Unable to allocate buffers of size %.3f MB\n", (float) totalBufferSize / (1024*1024));
         m_isValid = false;
     } else {
-        RT_LOG("Allocated buffers of size 2 * %.3f MB\n", (float) bufferSize / (1024*1024));
+        RT_LOG("Allocated buffers of size %.3f MB\n", (float) totalBufferSize / (1024*1024));
     }
 }
 
@@ -169,10 +185,20 @@ void Raytracer::renderScene(const CompiledScene& scene, const Camera& camera, co
 
 void Raytracer::readPixels(void* out) const {
     uint32_t bufferSize = getPixelBufferSize();
-    m_cl.queue.enqueueReadBuffer(m_accumPixelBuffer, true, 0, bufferSize, out);
+
+    if (m_mode == RaytracingMode::SINGLE) {
+        m_cl.queue.enqueueReadBuffer(m_pixelBuffer, true, 0, bufferSize, out);
+    } else {
+        m_cl.queue.enqueueReadBuffer(m_accumPixelBuffer, true, 0, bufferSize, out);
+    }
 }
 
 void Raytracer::accumulatePixels() {
+    if (m_mode == RaytracingMode::SINGLE) {
+        RT_LOG("Can not use this function in single mode\n");
+        return;
+    }
+
     m_cl.accumulateKernel.setArg(0, m_accumPixelBuffer);
     m_cl.accumulateKernel.setArg(1, m_pixelBuffer);
     m_cl.accumulateKernel.setArg(2, sizeof(m_frameCount), &m_frameCount);
