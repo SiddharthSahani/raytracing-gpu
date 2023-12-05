@@ -1,9 +1,10 @@
 
 #pragma once
 
-#include <CL/opencl.hpp>
-#include <glm/glm.hpp>
+#include <CL/opencl.h>
+#include <glm/vec3.hpp>
 #include <memory>
+#include <stdio.h>
 
 
 namespace rt {

@@ -1,8 +1,9 @@
 
 #pragma once
 
-#include "materials.h"
-#include "objects.h"
+#include "src/raytracer/material.h"
+#include "src/raytracer/objects.h"
+#include <vector>
 
 const int SCENE_MAX_OBJECTS = 5;
 const int SCENE_MAX_MATERIALS = 3;
@@ -64,22 +65,27 @@ class Scene {
 
 CompiledScene Scene::compile(bool* success) const {
     std::vector<const Material*> unique_materials;
-    std::vector<uint32_t> material_indexes(m_objects.size());
+    std::vector<int> material_indexes(m_objects.size());
 
     auto find_mat = [&](const Material* ptr) {
-        return std::find(unique_materials.begin(), unique_materials.end(), ptr);
+        for (int i = 0; i < unique_materials.size(); i++) {
+            if (unique_materials[i] == ptr) {
+                return i;
+            }
+        }
+        return -1;
     };
 
     // referencing same index if material is already being used
     for (int idx = 0; idx < m_objects.size(); idx++) {
         const Material* mat_ptr = m_objects[idx].material.get();
 
-        auto it = find_mat(mat_ptr);
-        if (it == unique_materials.end()) {
+        int mat_idx = find_mat(mat_ptr);
+        if (mat_idx == -1) {
             unique_materials.push_back(mat_ptr);
             material_indexes[idx] = unique_materials.size() - 1;
         } else {
-            material_indexes[idx] = it - unique_materials.begin();
+            material_indexes[idx] = mat_idx;
         }
     }
 

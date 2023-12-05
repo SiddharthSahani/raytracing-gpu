@@ -1,9 +1,22 @@
 
+// config
 #ifndef CONFIG__SAMPLE_COUNT
     #define CONFIG__SAMPLE_COUNT 1
 #endif
 #ifndef CONFIG__BOUNCE_LIMIT
     #define CONFIG__BOUNCE_LIMIT 1
+#endif
+
+// pixel format
+#ifdef PIXEL_FORMAT__R8G8B8A8
+    #define PIXEL_BUFFER__TYPE uchar4
+#endif
+#ifdef PIXEL_FORMAT__R32G32B32A32
+    #define PIXEL_BUFFER__TYPE float4
+#endif
+#ifndef PIXEL_BUFFER__TYPE
+    #define PIXEL_BUFFER__TYPE float4
+    #define PIXEL_FORMAT__R32G32B32A32
 #endif
 
 
@@ -22,12 +35,6 @@ typedef struct {
     float3 sky_color;
     uint object_count;
 } rt_Scene;
-
-
-typedef struct {
-    uint sample_count;
-    uint bounce_limit;
-} rt_Config;
 
 
 float3 reflect(float3 I, float3 N) {
@@ -77,7 +84,7 @@ float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rng_seed) {
 }
 
 
-kernel void renderScene(const rt_Camera camera, const rt_Scene _scene, global float4* out) {
+kernel void renderScene(const rt_Camera camera, const rt_Scene _scene, global PIXEL_BUFFER__TYPE* out, uint initialRngSeed) {
     local rt_Scene scene;
 
     if (get_local_id(0) == 0) {
@@ -87,7 +94,7 @@ kernel void renderScene(const rt_Camera camera, const rt_Scene _scene, global fl
 
     uint pixel_idx = get_global_id(0);
 
-    uint rng_seed = pixel_idx;
+    uint rng_seed = (pixel_idx + 1) * initialRngSeed;
 
     float3 accumulated_color = {0.0f, 0.0f, 0.0f};
 
@@ -99,6 +106,14 @@ kernel void renderScene(const rt_Camera camera, const rt_Scene _scene, global fl
     }
     accumulated_color = accumulated_color / CONFIG__SAMPLE_COUNT;
 
+#ifdef PIXEL_FORMAT__R32G32B32A32
     out[pixel_idx].xyz = accumulated_color;
     out[pixel_idx].w = 1.0f;
+#endif
+#ifdef PIXEL_FORMAT__R8G8B8A8
+    accumulated_color = clamp(accumulated_color, 0.0f, 1.0f);
+    out[pixel_idx].xyz = convert_uchar3(accumulated_color * 255.0f);
+    out[pixel_idx].w = 255;
+#endif
+
 }
