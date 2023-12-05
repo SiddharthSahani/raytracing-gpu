@@ -1,10 +1,5 @@
 
-#ifdef PIXEL_FORMAT__R8G8B8A8
-#   define PIXEL_BUFFER__TYPE uchar4
-#endif
-#ifdef PIXEL_FORMAT__R32G32B32A32
-#   define PIXEL_BUFFER__TYPE float4
-#endif
+#include "kernels/defines.h"
 
 
 kernel void accumulateFrameData(
