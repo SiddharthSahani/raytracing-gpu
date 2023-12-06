@@ -22,28 +22,28 @@ bool hitsTriangle(local const rt_Triangle* triangle, const rt_Ray* ray, rt_HitRe
         return false;
     }
 
-    float inv_det = 1.0f / det;
+    float invDet = 1.0f / det;
     float3 tvec = ray->origin - triangle->v0;
-    float u = dot(tvec, pvec) * inv_det;
+    float u = dot(tvec, pvec) * invDet;
     if (u < 0.0f || u > 1.0f) {
         return false;
     }
 
     float3 qvec = cross(tvec, v0v1);
-    float v = dot(ray->direction, qvec) * inv_det;
+    float v = dot(ray->direction, qvec) * invDet;
     if (v < 0.0f || u + v > 1.0f) {
         return false;
     }
 
-    float t = dot(v0v2, qvec) * inv_det;
-    if (t > 0.0f && t < record->hit_distance) {
-        record->world_position = ray->origin + ray->direction * t;
-        record->hit_distance = t;
+    float t = dot(v0v2, qvec) * invDet;
+    if (t > 0.0f && t < record->hitDistance) {
+        record->worldPosition = ray->origin + ray->direction * t;
+        record->hitDistance = t;
         
         // change the normal's direction if its into the plane of triangle
-        // record->world_normal = normalize(cross(v0v1, v0v2));
+        // record->worldNormal = normalize(cross(v0v1, v0v2));
         float3 normal = normalize(cross(v0v1, v0v2));
-        record->world_normal = dot(ray->direction, normal) > 0.0f ? -normal : normal;
+        record->worldNormal = dot(ray->direction, normal) > 0.0f ? -normal : normal;
         return true;
     }
 

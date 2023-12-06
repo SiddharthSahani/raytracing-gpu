@@ -6,10 +6,10 @@
 
 
 typedef struct {
-    float16 inv_view;
-    float16 inv_projection;
+    float16 invViewMat;
+    float16 invProjectionMat;
     float3 position;
-    uint2 image_size;
+    uint2 imageSize;
 } rt_Camera;
 
 
@@ -23,16 +23,16 @@ float4 mul_f16_f4(float16 matrix, float4 vector) {
 }
 
 
-rt_Ray getRay(const rt_Camera* camera, uint pixel_index) {
-    float2 pixel_coord = {pixel_index % camera->image_size.x, pixel_index / camera->image_size.x};
-    pixel_coord.y = camera->image_size.y - pixel_coord.y;
+rt_Ray getRay(const rt_Camera* camera, uint pixelIndex) {
+    float2 pixelCoord = {pixelIndex % camera->imageSize.x, pixelIndex / camera->imageSize.x};
+    pixelCoord.y = camera->imageSize.y - pixelCoord.y;
 
-    float2 coord = pixel_coord / convert_float2(camera->image_size) * 2.0f - 1.0f; 
-    float4 target = mul_f16_f4(camera->inv_projection, (float4)(coord.xy, 1.0f, 1.0f));
+    float2 coord = pixelCoord / convert_float2(camera->imageSize) * 2.0f - 1.0f; 
+    float4 target = mul_f16_f4(camera->invProjectionMat, (float4)(coord.xy, 1.0f, 1.0f));
 
     rt_Ray ray;
     ray.origin = camera->position;
-    ray.direction = mul_f16_f4(camera->inv_view, (float4)(normalize(target.xyz / target.w), 0.0f)).xyz;
+    ray.direction = mul_f16_f4(camera->invViewMat, (float4)(normalize(target.xyz / target.w), 0.0f)).xyz;
     return ray;
 }
 

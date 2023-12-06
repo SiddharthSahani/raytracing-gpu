@@ -15,7 +15,7 @@ typedef struct {
         rt_Triangle triangle;
     };
     uint type;
-    uint material_idx;
+    uint materialIndex;
 } rt_Object;
 
 

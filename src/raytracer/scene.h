@@ -17,7 +17,7 @@ struct Object {
         Triangle triangle;
     };
     cl_uint type;
-    cl_uint material_idx;
+    cl_uint materialIndex;
 };
 
 
@@ -107,7 +107,7 @@ CompiledScene Scene::compile(bool* success) const {
     if (valid) {
         for (int i = 0; i < m_objects.size(); i++) {
             scene.objects[i] = internal::convert(m_objects[i]);
-            scene.objects[i].material_idx = material_indexes[i];
+            scene.objects[i].materialIndex = material_indexes[i];
         }
         for (int i = 0; i < unique_materials.size(); i++) {
             scene.materials[i] = *unique_materials[i];

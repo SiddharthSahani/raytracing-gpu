@@ -24,11 +24,11 @@ bool hitsSphere(local const rt_Sphere* sphere, const rt_Ray* ray, rt_HitRecord* 
 
     float t = (-b - sqrt(d)) / (2.0f * a);
 
-    if (t > 0.0f && t < record->hit_distance) {
-        record->world_position = oc + ray->direction * t;
-        record->world_normal = normalize(record->world_position);
-        record->hit_distance = t;
-        record->world_position += sphere->position;
+    if (t > 0.0f && t < record->hitDistance) {
+        record->worldPosition = oc + ray->direction * t;
+        record->worldNormal = normalize(record->worldPosition);
+        record->hitDistance = t;
+        record->worldPosition += sphere->position;
         return true;
     }
 

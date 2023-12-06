@@ -10,10 +10,10 @@ typedef struct {
 
 
 typedef struct {
-    float3 world_position;
-    float3 world_normal;
-    float hit_distance;
-    uint material_idx;
+    float3 worldPosition;
+    float3 worldNormal;
+    float hitDistance;
+    uint materialIndex;
 } rt_HitRecord;
 
 
