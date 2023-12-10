@@ -5,16 +5,11 @@
 #include "kernels/objects.h"
 #include "kernels/ray_gen.h"
 
-#define MAX_OBJECTS 5
-#define MAX_MATERIALS 3
-
 
 typedef struct {
-    rt_Object objects[MAX_OBJECTS];
-    rt_Material materials[MAX_MATERIALS];
-    float3 sky_color;
-    uint object_count;
-} rt_Scene;
+    float3 backgroundColor;
+    uint objectCount;
+} rt_SceneParams;
 
 
 float3 reflect(float3 I, float3 N) {
@@ -22,12 +17,12 @@ float3 reflect(float3 I, float3 N) {
 }
 
 
-rt_HitRecord traceRay(const rt_Ray* ray, local const rt_Scene* scene) {
+rt_HitRecord traceRay(const rt_Ray* ray, const rt_SceneParams* scene, global const rt_Object* objects) {
     rt_HitRecord record;
     record.hitDistance = FLT_MAX;
 
-    for (int i = 0; i < scene->object_count; i++) {
-        const local rt_Object* object = &scene->objects[i];
+    for (int i = 0; i < scene->objectCount; i++) {
+        global const rt_Object* object = &objects[i];
         if (hitsObject(object, ray, &record)) {
             record.materialIndex = object->materialIndex;
         }
@@ -37,20 +32,20 @@ rt_HitRecord traceRay(const rt_Ray* ray, local const rt_Scene* scene) {
 }
 
 
-float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rngSeed) {
+float3 perPixel(rt_Ray ray, const rt_SceneParams* scene, global const rt_Object* objects, global const rt_Material* materials, uint* rngSeed) {
     float3 light = {0.0f, 0.0f, 0.0f};
     float3 contribution = {1.0f, 1.0f, 1.0f};
 
     for (int i = 0; i < CONFIG__BOUNCE_LIMIT; i++) {
         rngSeed += i * i * i;
-        rt_HitRecord record = traceRay(&ray, scene);
+        rt_HitRecord record = traceRay(&ray, scene, objects);
 
         if (record.hitDistance == FLT_MAX) {
-            light += scene->sky_color * contribution;
+            light += scene->backgroundColor * contribution;
             break;
         }
 
-        local const rt_Material* material = &scene->materials[record.materialIndex];
+        global const rt_Material* material = &materials[record.materialIndex];
 
         contribution *= material->color;
 
@@ -64,14 +59,14 @@ float3 perPixel(rt_Ray ray, local const rt_Scene* scene, uint* rngSeed) {
 }
 
 
-kernel void renderScene(const rt_Camera camera, const rt_Scene _scene, global PIXEL_BUFFER__TYPE* out, uint initialRngSeed) {
-    local rt_Scene scene;
-
-    if (get_local_id(0) == 0) {
-        scene = _scene;
-    }
-    barrier(CLK_LOCAL_MEM_FENCE);
-
+kernel void renderScene(
+    const rt_Camera camera,
+    const rt_SceneParams scene,
+    global const rt_Object* objects,
+    global const rt_Material* materials,
+    uint initialRngSeed,
+    global PIXEL_BUFFER__TYPE* out
+) {
     uint pixelIndex = get_global_id(0);
 
     uint rngSeed = (pixelIndex + 1) * initialRngSeed;
@@ -82,7 +77,7 @@ kernel void renderScene(const rt_Camera camera, const rt_Scene _scene, global PI
 
     for (int frameIndex = 0; frameIndex < CONFIG__SAMPLE_COUNT; frameIndex++) {
         rngSeed += frameIndex * 32421;
-        accumulatedFrameColor += perPixel(ray, &scene, &rngSeed);
+        accumulatedFrameColor += perPixel(ray, &scene, objects, materials, &rngSeed);
     }
     accumulatedFrameColor = accumulatedFrameColor / CONFIG__SAMPLE_COUNT;
 

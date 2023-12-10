@@ -47,6 +47,24 @@ struct CL_Objects {
 };
 
 
+namespace internal {
+
+struct SceneParams {
+    cl_float3 backgroundColor;
+    cl_uint objectsCount;
+};
+
+};
+
+
+struct CompiledScene {
+    cl::Buffer objectsBuffer;
+    cl::Buffer materialsBuffer;
+    cl_float3 backgroundColor;
+    cl_uint objectsCount;
+};
+
+
 Config DEFAULT_CONFIG = {
     .sampleCount = 128,
     .bounceLimit = 5
@@ -57,6 +75,7 @@ class Raytracer {
 
     public:
         Raytracer(uint32_t viewportWidth, uint32_t viewportHeight, PixelFormat format = PixelFormat::R32G32B32A32, RaytracingMode mode = RaytracingMode::SINGLE);
+        CompiledScene compileScene(const Scene& scene) const;
         void renderScene(const CompiledScene& scene, const Camera& camera, const Config& config);
         void readPixels(void* out) const;
         void accumulatePixels();
@@ -167,10 +186,21 @@ void Raytracer::renderScene(const CompiledScene& scene, const Camera& camera, co
         makeClKernel();
     }
 
+    // m_cl.renderKernel.setArg(0, sizeof(Camera), &camera);
+    // m_cl.renderKernel.setArg(1, sizeof(CompiledScene), &scene);
+    // m_cl.renderKernel.setArg(2, m_pixelBuffer);
+    // m_cl.renderKernel.setArg(3, sizeof(uint32_t), &m_frameCount);
+    internal::SceneParams params = {
+        .backgroundColor = scene.backgroundColor,
+        .objectsCount = scene.objectsCount
+    };
+
     m_cl.renderKernel.setArg(0, sizeof(Camera), &camera);
-    m_cl.renderKernel.setArg(1, sizeof(CompiledScene), &scene);
-    m_cl.renderKernel.setArg(2, m_pixelBuffer);
-    m_cl.renderKernel.setArg(3, sizeof(uint32_t), &m_frameCount);
+    m_cl.renderKernel.setArg(1, sizeof(internal::SceneParams), &params);
+    m_cl.renderKernel.setArg(2, scene.objectsBuffer);
+    m_cl.renderKernel.setArg(3, scene.materialsBuffer);
+    m_cl.renderKernel.setArg(4, sizeof(uint32_t), &m_frameCount);
+    m_cl.renderKernel.setArg(5, m_pixelBuffer);
 
     m_cl.queue.enqueueNDRangeKernel(
         m_cl.renderKernel,
@@ -193,6 +223,7 @@ void Raytracer::readPixels(void* out) const {
     }
 }
 
+
 void Raytracer::accumulatePixels() {
     if (m_mode == RaytracingMode::SINGLE) {
         RT_LOG("Can not use this function in single mode\n");
@@ -214,6 +245,7 @@ void Raytracer::accumulatePixels() {
 
     m_frameCount++;
 }
+
 
 uint32_t Raytracer::getPixelBufferSize() const {
     uint32_t pixelSize;
@@ -254,6 +286,73 @@ std::string Raytracer::makeProgramBuildFlags() const {
     }
 
     return stream.str();
+}
+
+
+CompiledScene Raytracer::compileScene(const Scene& scene) const {
+    
+    // 1. Grouping up common materials
+    std::vector<const Material*> uniqueMaterials;
+    std::vector<uint32_t> materialIndices(scene.objects.size());
+    {
+        auto findMaterial = [&](const Material* mat) {
+            return std::find(uniqueMaterials.begin(), uniqueMaterials.end(), mat);
+        };
+
+        for (int objIdx = 0; objIdx < scene.objects.size(); objIdx++) {
+            const Material* mat = scene.objects[objIdx].material.get();
+            auto matLocation = findMaterial(mat);
+
+            if (matLocation == uniqueMaterials.end()) {
+                uniqueMaterials.push_back(mat);
+                materialIndices[objIdx] = uniqueMaterials.size() - 1;
+            } else {
+                materialIndices[objIdx] = matLocation - uniqueMaterials.begin();
+            }
+        }
+    }
+
+    // 2. Creating buffers
+    int err;
+
+    uint32_t objectsBufferSize = scene.objects.size() * sizeof(internal::Object);
+    uint32_t materialsBufferSize = uniqueMaterials.size() * sizeof(Material);
+    uint32_t sceneBufferSize = objectsBufferSize + materialsBufferSize;
+    cl::Buffer objectsBuffer = cl::Buffer(m_cl.context, CL_MEM_READ_ONLY, objectsBufferSize, nullptr, &err);
+    cl::Buffer materialsBuffer = cl::Buffer(m_cl.context, CL_MEM_READ_ONLY, materialsBufferSize, nullptr, &err);
+
+    if (err) {
+        RT_LOG("Unable to allocate buffers for scene [size: %.3f KB]\n", (float) sceneBufferSize / 1024);
+    } else {
+        // RT_LOG("Object Buffer Size: %.3f B [size: %d]\n", (float) objectsBufferSize, scene.objects.size());
+        // RT_LOG("Material Buffer Size: %.3f B [size: %d]\n", (float) materialsBufferSize, uniqueMaterials.size());
+        RT_LOG("Allocated buffers for scene [size %.3f KB]\n", (float) sceneBufferSize / 1024);
+
+        std::vector<internal::Object> objects(scene.objects.size());
+        std::vector<Material> materials(uniqueMaterials.size());
+        for (int i = 0; i < objects.size(); i++) {
+            objects[i] = internal::convert(scene.objects[i]);
+            objects[i].materialIndex = materialIndices[i];
+        }
+        for (int i = 0; i < materials.size(); i++) {
+            materials[i] = *uniqueMaterials[i];
+        }
+        m_cl.queue.enqueueWriteBuffer(objectsBuffer, true, 0, objectsBufferSize, objects.data());
+        m_cl.queue.enqueueWriteBuffer(materialsBuffer, true, 0, materialsBufferSize, materials.data());
+    }
+
+    if (err) {
+        CompiledScene cScene;
+        cScene.objectsCount = 0;
+        return cScene;
+    }
+
+    CompiledScene cScene;
+    cScene.objectsBuffer = objectsBuffer;
+    cScene.materialsBuffer = materialsBuffer;
+    cScene.objectsCount = scene.objects.size();
+    cScene.backgroundColor = {scene.backgroundColor.r, scene.backgroundColor.g, scene.backgroundColor.b, 1.0f};
+    return cScene;
 }
 
 }

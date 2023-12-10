@@ -35,14 +35,15 @@ int main() {
     rt::Raytracer raytracer(IMAGE_WIDTH, IMAGE_HEIGHT, rt::PixelFormat::R32G32B32A32, rt::RaytracingMode::MULTIPLE);
     rt::Renderer renderer(raytracer);
     rt::Camera camera = rt::create_camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT}, {0, 0, 6}, {0, 0, -1});
-    rt::CompiledScene scene = create_scene_1();
+    rt::Scene scene = create_scene_1();
+    rt::CompiledScene cScene = raytracer.compileScene(scene);
 
     while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
         if (IsKeyPressed(KEY_SPACE)) {
-            TIME_FUNCTION("renderScene", raytracer.renderScene(scene, camera, rt::DEFAULT_CONFIG));
+            TIME_FUNCTION("renderScene", raytracer.renderScene(cScene, camera, rt::DEFAULT_CONFIG));
             TIME_FUNCTION("accumulatePixels", raytracer.accumulatePixels());
             renderer.update();
         }
@@ -50,6 +51,7 @@ int main() {
         DrawTextureEx(renderer.get(), {0.0f, 0.0f}, 0.0f, (float) WINDOW_WIDTH/IMAGE_WIDTH, WHITE);
 
         // DrawFPS(10, 10);
+        // DrawText(TextFormat("Frame time: %f", GetFrameTime()), 10, 30, 18, BLACK);
         EndDrawing();
     }
 
