@@ -27,6 +27,31 @@ using namespace std::chrono;
 }
 
 
+std::vector<rt::CompiledScene> initializeScenes(const rt::Raytracer& raytracer) {
+    return {
+        raytracer.compileScene(create_scene_1()),
+        raytracer.compileScene(create_scene_2()),
+        raytracer.compileScene(create_scene_3()),
+        raytracer.compileScene(create_scene_4()),
+        raytracer.compileScene(create_scene_5()),
+    };
+}
+
+
+int getCurrentSceneIndex() {
+    static int currentSceneIndex = 4;
+
+    if (IsKeyPressed(KEY_LEFT)) {
+        currentSceneIndex--;
+    }
+    if (IsKeyPressed(KEY_RIGHT)) {
+        currentSceneIndex++;
+    }
+
+    return currentSceneIndex;
+}
+
+
 int main() {
     SetTraceLogLevel(LOG_NONE);
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Raytracing with OpenCl");
@@ -35,17 +60,29 @@ int main() {
     rt::Raytracer raytracer(IMAGE_WIDTH, IMAGE_HEIGHT, rt::PixelFormat::R32G32B32A32, rt::RaytracingMode::MULTIPLE);
     rt::Renderer renderer(raytracer);
     rt::Camera camera = rt::create_camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT}, {0, 0, 6}, {0, 0, -1});
-    rt::Scene scene = create_scene_1();
-    rt::CompiledScene cScene = raytracer.compileScene(scene);
+
+    std::vector<rt::CompiledScene> compiledScenes = initializeScenes(raytracer);
+    int sceneIndex = getCurrentSceneIndex();
+    rt::CompiledScene cScene = compiledScenes[sceneIndex % compiledScenes.size()];
+
+    bool sceneChangedFlag = false;
 
     while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
-        if (IsKeyPressed(KEY_SPACE)) {
+        if (sceneIndex != getCurrentSceneIndex()) {
+            raytracer.resetFrameCount();
+            sceneIndex = getCurrentSceneIndex();
+            cScene = compiledScenes[sceneIndex % compiledScenes.size()];
+            sceneChangedFlag = true;
+        }
+
+        if (IsKeyPressed(KEY_SPACE) || sceneChangedFlag) {
             TIME_FUNCTION("renderScene", raytracer.renderScene(cScene, camera, rt::DEFAULT_CONFIG));
             TIME_FUNCTION("accumulatePixels", raytracer.accumulatePixels());
             renderer.update();
+            sceneChangedFlag = false;
         }
 
         DrawTextureEx(renderer.get(), {0.0f, 0.0f}, 0.0f, (float) WINDOW_WIDTH/IMAGE_WIDTH, WHITE);
