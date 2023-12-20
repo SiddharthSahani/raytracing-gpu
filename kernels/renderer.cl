@@ -47,12 +47,13 @@ float3 perPixel(rt_Ray ray, const rt_SceneParams* scene, global const rt_Object*
 
         global const rt_Material* material = &materials[record.materialIndex];
 
+        light += material->emissionColor * contribution;
         contribution *= material->color;
 
         float3 diffuseDir = normalize(record.worldNormal + randomFloat3(rngSeed));
         float3 specularDir = reflect(ray.direction, record.worldNormal);
-        ray.direction = normalize(mix(diffuseDir, specularDir, material->smoothness));
         ray.origin = record.worldPosition + record.worldNormal * 0.001f;
+        ray.direction = normalize(mix(diffuseDir, specularDir, material->smoothness));
     }
 
     return light;

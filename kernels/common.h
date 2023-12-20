@@ -20,6 +20,7 @@ typedef struct {
 typedef struct {
     float3 color;
     float smoothness;
+    float3 emissionColor;
 } rt_Material;
 
 
