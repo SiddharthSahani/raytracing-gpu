@@ -16,13 +16,20 @@ float randomFloat(uint* seed) {
 }
 
 
+float randomNormalFloat(uint* seed) {
+    float theta = 2.0f * M_PI_F * randomFloat(seed);
+    float rho = sqrt(-2.0f * log(randomFloat(seed)));
+    return rho * cos(theta);
+}
+
+
 float3 randomFloat3(uint* seed) {
-    float3 x = {
-        randomFloat(seed),
-        randomFloat(seed),
-        randomFloat(seed)
+    float3 p = {
+        randomNormalFloat(seed),
+        randomNormalFloat(seed),
+        randomNormalFloat(seed)
     };
-    return normalize(x * 2.0f - 1.0f);
+    return normalize(p);
 }
 
 
