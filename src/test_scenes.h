@@ -80,18 +80,21 @@ rt::Scene create_scene_5() {
     auto mat_ground = rt::createMaterial({0.8f, 0.8f, 0.0f}, 0.0f);
     auto mat_center = rt::createMaterial({0.7f, 0.3f, 0.3f}, 0.0f);
     auto mat_side = rt::createMaterial({0.8f, 0.8f, 0.8f}, 1.0f);
+    auto mat_light = rt::createEmissiveMaterial({1.0f, 0.7f, 0.2f}, 10.0f);
 
     auto sph1 = rt::createSphere({ 0.0f, 0.0f, 3.5f}, 0.5f, mat_center);
     auto sph2 = rt::createSphere({-1.0f, 0.0f, 4.0f}, 0.5f, mat_side);
     auto sph3 = rt::createSphere({ 1.0f, 0.0f, 4.0f}, 0.5f, mat_side);
     auto ground = rt::createSphere({0.0f, -101.0f, -0.0f}, 100.5f, mat_ground);
+    auto light = rt::createSphere({0.0f, -0.4f, 4.8f}, 0.1f, mat_light);
 
     rt::Scene scene;
     scene.objects.push_back(sph1);
     scene.objects.push_back(sph2);
     scene.objects.push_back(sph3);
     scene.objects.push_back(ground);
-    scene.backgroundColor = {0.5f, 0.7f, 1.0f};
+    scene.objects.push_back(light);
+    scene.backgroundColor = {0.3f, 0.3f, 0.4f};
 
     return scene;
 }
