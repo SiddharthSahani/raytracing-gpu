@@ -1,14 +1,11 @@
 
 #pragma once
 
+#include "src/rtlog.h"
 #include "src/cl_utils.h"
 #include "src/raytracer/scene.h"
 #include "src/raytracer/camera.h"
 #include <sstream>
-
-#ifndef RT_LOG
-    #define RT_LOG(text, ...)
-#endif
 
 
 namespace rt {
@@ -121,7 +118,7 @@ Raytracer::Raytracer(uint32_t viewportWidth, uint32_t viewportHeight, PixelForma
 
 void Raytracer::initializeClMembers() {
     if (!chooseClDevice(m_cl.device)) {
-        RT_LOG("Unable to choose Cl Device\n");
+        RT_LOG("Unable to choose Cl Device");
         m_isValid = false;
         return;
     }
@@ -142,14 +139,14 @@ void Raytracer::makeClKernel() {
     RT_LOG("(Re)building Cl Program with flags: %s\n", buildFlags.c_str());
 
     if (mainProgram.build(buildFlags.c_str()) || (m_mode == RaytracingMode::MULTIPLE && accumulateProgram.build(buildFlags.c_str()))) {
-        RT_LOG("Error while building Cl program\n");
+        RT_LOG("Error while building Cl program");
         RT_LOG("Build Log for main:\n%s\n", mainProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_cl.device).c_str());
         if (m_mode == RaytracingMode::MULTIPLE) {
             RT_LOG("Build Log for accumulate:\n%s\n", accumulateProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_cl.device).c_str());
         }
         m_isValid = false;
     } else {
-        RT_LOG("Built Cl Program successfully\n");
+        RT_LOG("Built Cl Program successfully");
         m_cl.renderKernel = cl::Kernel(mainProgram, "renderScene");
         m_cl.accumulateKernel = cl::Kernel(accumulateProgram, "accumulateFrameData");
     }
@@ -178,7 +175,7 @@ void Raytracer::createPixelBuffers() {
 
 void Raytracer::renderScene(const CompiledScene& scene, const Camera& camera, const Config& config) {
     if (!m_isValid) {        
-        RT_LOG("Can not render scene as this instance is not valid\n");
+        RT_LOG("Can not render scene as this instance is not valid");
         return;
     }
     if (config != m_lastConfig) {
@@ -226,7 +223,7 @@ void Raytracer::readPixels(void* out) const {
 
 void Raytracer::accumulatePixels() {
     if (m_mode == RaytracingMode::SINGLE) {
-        RT_LOG("Can not use this function in single mode\n");
+        RT_LOG("Can not use this function in single mode");
         return;
     }
 
@@ -258,7 +255,7 @@ uint32_t Raytracer::getPixelBufferSize() const {
             pixelSize = 16;
             break;
         default:
-            RT_LOG("Invalid pixel format encountered in `Raytracer::getPixelBufferSize()`\n");
+            RT_LOG("Invalid pixel format encountered in `Raytracer::getPixelBufferSize()`");
             break;
     }
 

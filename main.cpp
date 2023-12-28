@@ -1,30 +1,15 @@
 
-#define RT_LOG printf
+#define RT_PRINT_LOG
+
+#include "src/rtlog.h"
 #include "src/renderer.h"
 #include "src/test_scenes.h"
-#include <chrono>
-
-using namespace std::chrono;
 
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
 #define IMAGE_WIDTH (1280/2)
 #define IMAGE_HEIGHT (720/2)
-
-
-#define TIME_FUNCTION(name, func)                       \
-{                                                       \
-    auto startTime = high_resolution_clock::now();      \
-    { func; }                                           \
-    auto stopTime = high_resolution_clock::now();       \
-    auto timeTaken_ns = (stopTime - startTime).count(); \
-    printf(                                             \
-        name " took %f secs (%f ms)\n",                 \
-        (float) timeTaken_ns / 1'000'000'000,           \
-        (float) timeTaken_ns / 1'000'000                \
-    );                                                  \
-}
 
 
 std::vector<rt::CompiledScene> initializeScenes(const rt::Raytracer& raytracer) {
@@ -79,8 +64,8 @@ int main() {
         }
 
         if (IsKeyPressed(KEY_SPACE) || sceneChangedFlag) {
-            TIME_FUNCTION("renderScene", raytracer.renderScene(cScene, camera, rt::DEFAULT_CONFIG));
-            TIME_FUNCTION("accumulatePixels", raytracer.accumulatePixels());
+            RT_TIME_STMT("renderScene", raytracer.renderScene(cScene, camera, rt::DEFAULT_CONFIG));
+            RT_TIME_STMT("accumulatePixels", raytracer.accumulatePixels());
             renderer.update();
             sceneChangedFlag = false;
         }
