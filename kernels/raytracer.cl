@@ -60,7 +60,7 @@ float3 perPixel(rt_Ray ray, const rt_SceneParams* scene, global const rt_Object*
 }
 
 
-kernel void renderScene(
+kernel void raytraceScene(
     const rt_Camera camera,
     const rt_SceneParams scene,
     global const rt_Object* objects,

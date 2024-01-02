@@ -1,40 +1,15 @@
 
 #define RT_PRINT_LOG
 
-#include "src/rtlog.h"
-#include "src/renderer.h"
+#include "src/raylibrenderer.h"
 #include "src/test_scenes.h"
 
 
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 720
-#define IMAGE_WIDTH (1280/2)
-#define IMAGE_HEIGHT (720/2)
-
-
-std::vector<rt::CompiledScene> initializeScenes(const rt::Raytracer& raytracer) {
-    return {
-        raytracer.compileScene(create_scene_1()),
-        raytracer.compileScene(create_scene_2()),
-        raytracer.compileScene(create_scene_3()),
-        raytracer.compileScene(create_scene_4()),
-        raytracer.compileScene(create_scene_5()),
-    };
-}
-
-
-int getCurrentSceneIndex() {
-    static int currentSceneIndex = 4;
-
-    if (IsKeyPressed(KEY_LEFT)) {
-        currentSceneIndex--;
-    }
-    if (IsKeyPressed(KEY_RIGHT)) {
-        currentSceneIndex++;
-    }
-
-    return currentSceneIndex;
-}
+#define WINDOW_WIDTH (1280)
+#define WINDOW_HEIGHT (720)
+#define IMAGE_SCALE (2.0f)
+#define IMAGE_WIDTH (WINDOW_WIDTH / IMAGE_SCALE)
+#define IMAGE_HEIGHT (WINDOW_HEIGHT / IMAGE_SCALE)
 
 
 int main() {
@@ -42,40 +17,30 @@ int main() {
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Raytracing with OpenCl");
     SetTargetFPS(30);
 
-    rt::Raytracer raytracer(IMAGE_WIDTH, IMAGE_HEIGHT, rt::PixelFormat::R32G32B32A32, rt::RaytracingMode::MULTIPLE);
-    rt::Renderer renderer(raytracer);
-    rt::Camera camera = rt::create_camera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT}, {0, 0, 6}, {0, 0, -1});
+    cl::Platform platform = rt::getAllClPlatforms()[0];
+    cl::Device device = rt::getAllClDevices(platform)[0];
+    rt::CL_Objects clObjects = rt::createClObjects(platform, device);
 
-    std::vector<rt::CompiledScene> compiledScenes = initializeScenes(raytracer);
-    int sceneIndex = getCurrentSceneIndex();
-    rt::CompiledScene cScene = compiledScenes[sceneIndex % compiledScenes.size()];
+    rt::Raytracer raytracer({IMAGE_WIDTH, IMAGE_HEIGHT}, clObjects, rt::Format::RGBA32F, true);
+    rt::RaylibRenderer renderer(raytracer);
 
-    bool sceneChangedFlag = false;
+    auto camera = rt::createCamera(60.0f, {IMAGE_WIDTH, IMAGE_HEIGHT}, {0, 0, 6}, {0, 0, -1});
+    auto scene = create_scene_5().convert(clObjects.context, clObjects.queue);
 
     while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
-        if (sceneIndex != getCurrentSceneIndex()) {
-            raytracer.resetFrameCount();
-            sceneIndex = getCurrentSceneIndex();
-            cScene = compiledScenes[sceneIndex % compiledScenes.size()];
-            sceneChangedFlag = true;
-        }
-
-        if (IsKeyPressed(KEY_SPACE) || sceneChangedFlag) {
-            RT_TIME_STMT("renderScene", raytracer.renderScene(cScene, camera, rt::DEFAULT_CONFIG));
+        if (IsKeyPressed(KEY_SPACE)) {
+            RT_TIME_STMT("renderScene", raytracer.renderScene(scene, camera, {.sampleCount = 32, .bounceLimit = 5}));
             RT_TIME_STMT("accumulatePixels", raytracer.accumulatePixels());
             renderer.update();
-            sceneChangedFlag = false;
         }
 
-        DrawTextureEx(renderer.get(), {0.0f, 0.0f}, 0.0f, (float) WINDOW_WIDTH/IMAGE_WIDTH, WHITE);
+        renderer.draw(IMAGE_SCALE);
 
-        // DrawFPS(10, 10);
-        // DrawText(TextFormat("Frame time: %f", GetFrameTime()), 10, 30, 18, BLACK);
+        DrawFPS(10, 10);
+        DrawText(TextFormat("Frame time: %f", GetFrameTime()), 10, 30, 18, BLACK);
         EndDrawing();
     }
-
-    CloseWindow();
 }

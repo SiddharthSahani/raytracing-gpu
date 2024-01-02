@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "src/rtlog.h"
 #include "src/raytracer.h"
 #include <raylib/raylib.h>
 

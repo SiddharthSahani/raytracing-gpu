@@ -5,7 +5,7 @@ INCLUDES = -I . -I external/includes/
 LDFLAGS  = -L external/libs -lopencl -lraylib -lopengl32 -lgdi32 -lwinmm
 
 HEADERS = $(wildcard src/*.h)
-SOURCES = $(wildcard src/*.cpp)
+# SOURCES = $(wildcard src/*.cpp)z
 
 TARGET = main.exe
 
