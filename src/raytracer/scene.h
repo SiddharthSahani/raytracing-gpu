@@ -14,11 +14,11 @@ struct Scene {
     std::vector<Object> objects;
     glm::vec3 backgroundColor;
 
-    internal::Scene convert(cl::Context clContext, cl::CommandQueue clQueue);
+    internal::Scene convert(cl::Context clContext, cl::CommandQueue clQueue) const;
 };
 
 
-internal::Scene Scene::convert(cl::Context clContext, cl::CommandQueue clQueue) {
+internal::Scene Scene::convert(cl::Context clContext, cl::CommandQueue clQueue) const {
     // 1. Grouping common materials
     std::vector<std::shared_ptr<internal::Material>> uniqueMaterials;
     std::vector<uint32_t> materialIndices(objects.size());
@@ -49,14 +49,14 @@ internal::Scene Scene::convert(cl::Context clContext, cl::CommandQueue clQueue) 
     cl::Buffer materialsBuffer = cl::Buffer(clContext, CL_MEM_READ_ONLY, materialsBufferSize, nullptr, &err);
 
     if (err) {
-        RT_LOG("Unable to allocate buffers for [size: %.3f KB]\n", (float) sceneBufferSize / 1024);
+        RT_LOG("Unable to allocate buffers for [size: %.3f KB]", (float) sceneBufferSize / 1024);
         internal::Scene scene;
         scene.extra.numObjects = 0;
         scene.extra.backgroundColor = {1.0f, 0.0f, 0.0f, 1.0f};
         return scene;
     }
 
-    RT_LOG("Allocated buffers for [size %.3f KB]\n", (float) sceneBufferSize / 1024);
+    RT_LOG("Allocated buffers for [size %.3f KB]", (float) sceneBufferSize / 1024);
 
     std::vector<internal::Object> internalObjects(objects.size());
     std::vector<internal::Material> materials(uniqueMaterials.size());

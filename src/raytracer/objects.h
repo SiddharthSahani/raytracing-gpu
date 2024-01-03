@@ -14,7 +14,7 @@ struct Object {
     std::variant<internal::Sphere, internal::Triangle> internal;
     std::shared_ptr<internal::Material> material;
 
-    internal::Object convert();
+    internal::Object convert() const;
 };
 
 
@@ -45,7 +45,7 @@ Object createTriangle(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3&
 }
 
 
-internal::Object Object::convert() {
+internal::Object Object::convert() const {
     internal::Object object;
     if (auto ptr = std::get_if<internal::Sphere>(&internal)) {
         object.sphere = *ptr;

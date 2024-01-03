@@ -4,14 +4,15 @@
 #include "src/raytracer/scene.h"
 
 
-rt::Scene create_scene_1() {
-    auto cyan_mat = rt::createMaterial({0.2f, 0.9f, 0.8f}, 0.3f);
-    auto pink_mat = rt::createMaterial({1.0f, 0.0f, 1.0f}, 0.7f);
+rt::Scene createScene_1() {
+    auto cyanMat = rt::createMaterial({0.2f, 0.9f, 0.8f}, 0.3f);
+    auto pinkMat = rt::createMaterial({1.0f, 0.0f, 1.0f}, 0.7f);
 
-    auto sph1 = rt::createSphere({0.0f, 0.0f, 0.0f}, 1.0f, cyan_mat);
-    auto sph2 = rt::createSphere({0.0f, -6.0f, 0.0f}, 5.0f, pink_mat);
+    auto sph1 = rt::createSphere({0.0f, 0.0f, 0.0f}, 1.0f, cyanMat);
+    auto sph2 = rt::createSphere({0.0f, -6.0f, 0.0f}, 5.0f, pinkMat);
 
     rt::Scene scene;
+
     scene.objects.push_back(sph1);
     scene.objects.push_back(sph2);
     scene.backgroundColor = glm::vec3(210, 210, 230) / 255.0f;
@@ -20,14 +21,15 @@ rt::Scene create_scene_1() {
 }
 
 
-rt::Scene create_scene_2() {
-    auto blue_diff_mat = rt::createMaterial({0.0f, 0.2f, 0.8f}, 0.0f);
-    auto cyan_refl_mat = rt::createMaterial({0.0f, 1.0f, 1.0f}, 1.0f);
+rt::Scene createScene_2() {
+    auto blueMat = rt::createMaterial({0.0f, 0.2f, 0.8f}, 0.0f);
+    auto cyanMat = rt::createMaterial({0.0f, 1.0f, 1.0f}, 1.0f);
 
-    auto sph = rt::createSphere({0.0f, 0.0f, 0.0f}, 1.0f, blue_diff_mat);
-    auto tri = rt::createTriangle({-2.0f, -1.0f, -1.5f}, {2.0f, -1.0f, -1.5f}, {0.0f, -1.0f, 2.0f}, cyan_refl_mat);
+    auto sph = rt::createSphere({0.0f, 0.0f, 0.0f}, 1.0f, blueMat);
+    auto tri = rt::createTriangle({-2.0f, -1.0f, -1.5f}, {2.0f, -1.0f, -1.5f}, {0.0f, -1.0f, 2.0f}, cyanMat);
 
     rt::Scene scene;
+
     scene.objects.push_back(sph);
     scene.objects.push_back(tri);
     scene.backgroundColor = glm::vec3(180, 150, 200) / 255.0f;
@@ -36,16 +38,17 @@ rt::Scene create_scene_2() {
 }
 
 
-rt::Scene create_scene_3() {
-    auto purple_mat = rt::createMaterial({1.0f, 0.0f, 1.0f}, 0.5f);
-    auto red_mat = rt::createMaterial({1.0f, 0.0f, 0.0f}, 0.6f);
-    auto green_mat = rt::createMaterial({0.3f, 0.8f, 0.3f}, 0.2f);
+rt::Scene createScene_3() {
+    auto purpleMat = rt::createMaterial({1.0f, 0.0f, 1.0f}, 0.5f);
+    auto redMat = rt::createMaterial({1.0f, 0.0f, 0.0f}, 0.6f);
+    auto geeenMat = rt::createMaterial({0.3f, 0.8f, 0.3f}, 0.2f);
 
-    auto sph1 = rt::createSphere({0.0f, 0.0f, 0.0f}, 1.0f, purple_mat);
-    auto sph2 = rt::createSphere({2.0f, 0.0f, 0.0f}, 1.0f, red_mat);
-    auto sph3 = rt::createSphere({0.0f, -101.0f, 0.0f}, 100.0f, green_mat);
+    auto sph1 = rt::createSphere({0.0f, 0.0f, 0.0f}, 1.0f, purpleMat);
+    auto sph2 = rt::createSphere({2.0f, 0.0f, 0.0f}, 1.0f, redMat);
+    auto sph3 = rt::createSphere({0.0f, -101.0f, 0.0f}, 100.0f, geeenMat);
 
     rt::Scene scene;
+
     scene.objects.push_back(sph1);
     scene.objects.push_back(sph2);
     scene.objects.push_back(sph3);
@@ -55,17 +58,18 @@ rt::Scene create_scene_3() {
 }
 
 
-rt::Scene create_scene_4() {
-    auto red = rt::createMaterial({1.0f, 0.3f, 0.3f}, 0.7f);
-    auto green = rt::createMaterial({0.3f, 1.0f, 0.3f}, 0.0f);
-    auto grey = rt::createMaterial({0.6f, 0.6f, 0.6f}, 0.9f);
+rt::Scene createScene_4() {
+    auto redMat = rt::createMaterial({1.0f, 0.3f, 0.3f}, 0.7f);
+    auto greenMat = rt::createMaterial({0.3f, 1.0f, 0.3f}, 0.0f);
+    auto greyMat = rt::createMaterial({0.6f, 0.6f, 0.6f}, 0.9f);
 
-    auto sph1 = rt::createSphere({ 0.0f, 0.0f, -0.8f}, 0.9f, red);
-    auto sph2 = rt::createSphere({-2.0f, 0.0f, 0.0f}, 0.7f, grey);
-    auto sph3 = rt::createSphere({ 2.0f, 0.0f, 0.0f}, 0.7f, grey);
-    auto ground = rt::createSphere({0.0f, -101.0f, 0.0f}, 100.0f, green);
+    auto sph1 = rt::createSphere({ 0.0f, 0.0f, -0.8f}, 0.9f, redMat);
+    auto sph2 = rt::createSphere({-2.0f, 0.0f, 0.0f}, 0.7f, greyMat);
+    auto sph3 = rt::createSphere({ 2.0f, 0.0f, 0.0f}, 0.7f, greyMat);
+    auto ground = rt::createSphere({0.0f, -101.0f, 0.0f}, 100.0f, greenMat);
 
     rt::Scene scene;
+
     scene.objects.push_back(sph1);
     scene.objects.push_back(sph2);
     scene.objects.push_back(sph3);
@@ -76,19 +80,20 @@ rt::Scene create_scene_4() {
 }
 
 
-rt::Scene create_scene_5() {
-    auto mat_ground = rt::createMaterial({0.8f, 0.8f, 0.0f}, 0.0f);
-    auto mat_center = rt::createMaterial({0.7f, 0.3f, 0.3f}, 0.0f);
-    auto mat_side = rt::createMaterial({0.8f, 0.8f, 0.8f}, 1.0f);
-    auto mat_light = rt::createEmissiveMaterial({1.0f, 0.7f, 0.2f}, 10.0f);
+rt::Scene createScene_5() {
+    auto groundMat = rt::createMaterial({0.8f, 0.8f, 0.0f}, 0.0f);
+    auto centerMat = rt::createMaterial({0.7f, 0.3f, 0.3f}, 0.0f);
+    auto sideMat = rt::createMaterial({0.8f, 0.8f, 0.8f}, 1.0f);
+    auto lightMat = rt::createEmissiveMaterial({1.0f, 0.7f, 0.2f}, 10.0f);
 
-    auto sph1 = rt::createSphere({ 0.0f, 0.0f, 3.5f}, 0.5f, mat_center);
-    auto sph2 = rt::createSphere({-1.0f, 0.0f, 4.0f}, 0.5f, mat_side);
-    auto sph3 = rt::createSphere({ 1.0f, 0.0f, 4.0f}, 0.5f, mat_side);
-    auto ground = rt::createSphere({0.0f, -101.0f, -0.0f}, 100.5f, mat_ground);
-    auto light = rt::createSphere({0.0f, -0.4f, 4.8f}, 0.1f, mat_light);
+    auto sph1 = rt::createSphere({ 0.0f, 0.0f, 3.5f}, 0.5f, centerMat);
+    auto sph2 = rt::createSphere({-1.0f, 0.0f, 4.0f}, 0.5f, sideMat);
+    auto sph3 = rt::createSphere({ 1.0f, 0.0f, 4.0f}, 0.5f, sideMat);
+    auto ground = rt::createSphere({0.0f, -101.0f, -0.0f}, 100.5f, groundMat);
+    auto light = rt::createSphere({0.0f, -0.4f, 4.8f}, 0.1f, lightMat);
 
     rt::Scene scene;
+
     scene.objects.push_back(sph1);
     scene.objects.push_back(sph2);
     scene.objects.push_back(sph3);
