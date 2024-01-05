@@ -82,11 +82,11 @@ kernel void raytraceScene(
     }
     accumulatedFrameColor = accumulatedFrameColor / CONFIG__SAMPLE_COUNT;
 
-#ifdef PIXEL_FORMAT__R32G32B32A32
+#ifdef PIXEL_FORMAT__RGBA32FA32
     out[pixelIndex].xyz = accumulatedFrameColor;
     out[pixelIndex].w = 1.0f;
 #endif
-#ifdef PIXEL_FORMAT__R8G8B8A8
+#ifdef PIXEL_FORMAT__RGBA8
     accumulatedFrameColor = clamp(accumulatedFrameColor, 0.0f, 1.0f);
     out[pixelIndex].xyz = convert_uchar3(accumulatedFrameColor * 255.0f);
     out[pixelIndex].w = 255;

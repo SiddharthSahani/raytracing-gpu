@@ -162,7 +162,5 @@ std::string Raytracer::makeClProgramsBuildFlags() const {
     stream << " -DCONFIG__BOUNCE_LIMIT=" << m_lastConfig.bounceLimit;
     stream << " -DPIXEL_FORMAT__" << (m_format == Format::RGBA8 ? "RGBA8" : "RGBA32F");
 
-    printf("BUILD-FLAGS: %s\n", stream.str().c_str());
-
     return stream.str();
 }

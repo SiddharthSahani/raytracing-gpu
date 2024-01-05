@@ -13,13 +13,13 @@
 #endif
 
 // pixel formats
-#if !defined(PIXEL_FORMAT__R8G8B8A8) && !defined(PIXEL_FORMAT__R32G32B32A32)
-#   define PIXEL_FORMAT__R32G32B32A32
+#if !defined(PIXEL_FORMAT__RGBA8) && !defined(PIXEL_FORMAT__RGBA32FA32)
+#   define PIXEL_FORMAT__RGBA32FA32
 #endif
-#ifdef PIXEL_FORMAT__R8G8B8A8
+#ifdef PIXEL_FORMAT__RGBA8
 #   define PIXEL_BUFFER__TYPE uchar4
 #endif
-#ifdef PIXEL_FORMAT__R32G32B32A32
+#ifdef PIXEL_FORMAT__RGBA32FA32
 #   define PIXEL_BUFFER__TYPE float4
 #endif
 
