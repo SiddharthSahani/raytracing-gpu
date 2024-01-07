@@ -62,6 +62,10 @@ int main() {
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
+        if (IsKeyPressed(KEY_S) && IsKeyDown(KEY_LEFT_CONTROL)) {
+            RT_LOG("Image save status: %s", raytracer.saveAsImage("result.png") ? "true" : "false");
+        }
+
         if (isSceneChanged()) {
             raytracer.resetFrameCount();
         }

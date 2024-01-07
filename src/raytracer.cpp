@@ -1,5 +1,6 @@
 
 #include "src/raytracer.h"
+#include <stb/stb_image_write.h>
 #include <sstream>
 #include <fstream>
 
@@ -69,6 +70,20 @@ void Raytracer::readPixels(void* outBuffer) const {
     } else {
         m_clObjects.queue.enqueueReadBuffer(m_pixelBuffer, true, 0, bufferSize, outBuffer);
     }
+}
+
+
+bool Raytracer::saveAsImage(const char* filepath) const {
+    if (m_format == Format::RGBA32F) {
+        RT_LOG("Does not work for this format as of now");
+        return false;
+    }
+
+    uint8_t* imageBuffer = new uint8_t[getPixelBufferSize()];
+    readPixels(imageBuffer);
+    bool res = stbi_write_png(filepath, m_imageShape.x, m_imageShape.y, 4, imageBuffer, 0);
+    delete[] imageBuffer;
+    return res;
 }
 
 

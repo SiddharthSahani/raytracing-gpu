@@ -31,6 +31,7 @@ class Raytracer {
         Raytracer(glm::ivec2 imageShape, CL_Objects clObjects, Format format, bool allowAccumulation);
         void renderScene(const internal::Scene& scene, const internal::Camera& camera, const Config& config);
         void readPixels(void* outBuffer) const;
+        bool saveAsImage(const char* filepath) const;
         void accumulatePixels();
         void resetFrameCount() { m_frameCount = 1; }
 
