@@ -56,8 +56,8 @@ class Raytracer {
         bool m_isValid = true;
         Config m_lastConfig = {.sampleCount = 0};
 
-        cl::Buffer m_pixelBuffer;
-        cl::Buffer m_accumPixelBuffer;
+        cl::Image2D m_frameImage;
+        cl::Image2D m_accumImage;
         cl::Kernel m_raytracerKernel;
         cl::Kernel m_accumulatorKernel;
 

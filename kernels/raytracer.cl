@@ -66,7 +66,7 @@ kernel void raytraceScene(
     global const rt_Object* objects,
     global const rt_Material* materials,
     uint initialRngSeed,
-    global PIXEL_BUFFER__TYPE* out
+    write_only image2d_t out
 ) {
     uint pixelIndex = get_global_id(0);
 
@@ -82,14 +82,7 @@ kernel void raytraceScene(
     }
     accumulatedFrameColor = accumulatedFrameColor / CONFIG__SAMPLE_COUNT;
 
-#ifdef PIXEL_FORMAT__RGBA32FA32
-    out[pixelIndex].xyz = accumulatedFrameColor;
-    out[pixelIndex].w = 1.0f;
-#endif
-#ifdef PIXEL_FORMAT__RGBA8
-    accumulatedFrameColor = clamp(accumulatedFrameColor, 0.0f, 1.0f);
-    out[pixelIndex].xyz = convert_uchar3(accumulatedFrameColor * 255.0f);
-    out[pixelIndex].w = 255;
-#endif
-
+    int2 imgCoords = {pixelIndex % camera.imageSize.x, pixelIndex / camera.imageSize.x};
+    float4 imgColor = {accumulatedFrameColor.xyz, 1.0f};
+    write_imagef(out, imgCoords, imgColor);
 }

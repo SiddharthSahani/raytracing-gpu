@@ -50,7 +50,7 @@ void Raytracer::renderScene(const internal::Scene& scene, const internal::Camera
     m_raytracerKernel.setArg(2, scene.objectsBuffer);
     m_raytracerKernel.setArg(3, scene.materialsBuffer);
     m_raytracerKernel.setArg(4, sizeof(uint32_t), &m_frameCount);
-    m_raytracerKernel.setArg(5, m_pixelBuffer);
+    m_raytracerKernel.setArg(5, m_frameImage);
 
     m_clObjects.queue.enqueueNDRangeKernel(
         m_raytracerKernel,
@@ -66,9 +66,9 @@ void Raytracer::readPixels(void* outBuffer) const {
     uint32_t bufferSize = getPixelBufferSize();
 
     if (m_allowAccumulation) {
-        m_clObjects.queue.enqueueReadBuffer(m_accumPixelBuffer, true, 0, bufferSize, outBuffer);
+        m_clObjects.queue.enqueueReadImage(m_accumImage, true, {0, 0, 0}, {(size_t) m_imageShape.x, (size_t) m_imageShape.y, 1}, 0, 0, outBuffer);
     } else {
-        m_clObjects.queue.enqueueReadBuffer(m_pixelBuffer, true, 0, bufferSize, outBuffer);
+        m_clObjects.queue.enqueueReadImage(m_frameImage, true, {0, 0, 0}, {(size_t) m_imageShape.x, (size_t) m_imageShape.y, 1}, 0, 0, outBuffer);
     }
 }
 
@@ -98,9 +98,10 @@ void Raytracer::accumulatePixels() {
         return;
     }
 
-    m_accumulatorKernel.setArg(0, m_accumPixelBuffer);
-    m_accumulatorKernel.setArg(1, m_pixelBuffer);
+    m_accumulatorKernel.setArg(0, m_frameImage);
+    m_accumulatorKernel.setArg(1, m_accumImage);
     m_accumulatorKernel.setArg(2, sizeof(uint32_t), &m_frameCount);
+    m_accumulatorKernel.setArg(3, sizeof(uint32_t), &m_imageShape.x);
 
     m_clObjects.queue.enqueueNDRangeKernel(
         m_accumulatorKernel,
@@ -121,12 +122,13 @@ uint32_t Raytracer::getPixelBufferSize() const {
 
 
 void Raytracer::createPixelBuffers() {
-    int err;
+    int err = 0;
     uint32_t bufferSize = getPixelBufferSize();
 
-    m_pixelBuffer = cl::Buffer(m_clObjects.context, CL_MEM_READ_WRITE, bufferSize, nullptr, &err);
+    cl::ImageFormat imgFormat = m_format == Format::RGBA8 ? cl::ImageFormat(CL_RGBA, CL_UNORM_INT8) : cl::ImageFormat(CL_RGBA, CL_FLOAT);
+    m_frameImage = cl::Image2D(m_clObjects.context, CL_MEM_READ_WRITE, imgFormat, m_imageShape.x, m_imageShape.y, 0, nullptr, &err);
     if (m_allowAccumulation) {
-        m_accumPixelBuffer = cl::Buffer(m_clObjects.context, CL_MEM_READ_WRITE, bufferSize, nullptr, &err);
+        m_accumImage = cl::Image2D(m_clObjects.context, CL_MEM_READ_WRITE, imgFormat, m_imageShape.x, m_imageShape.y, 0, nullptr, &err);
     }
 
     uint32_t totalBufferSize = bufferSize * (m_allowAccumulation ? 2 : 1);
@@ -172,6 +174,8 @@ void Raytracer::createClKernels() {
 
 std::string Raytracer::makeClProgramsBuildFlags() const {
     std::stringstream stream;
+
+    stream << " -cl-std=CL2.0";
 
     stream << " -DCONFIG__SAMPLE_COUNT=" << m_lastConfig.sampleCount;
     stream << " -DCONFIG__BOUNCE_LIMIT=" << m_lastConfig.bounceLimit;
