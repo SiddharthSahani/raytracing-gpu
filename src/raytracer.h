@@ -35,6 +35,7 @@ class Raytracer {
         void accumulatePixels();
         void resetFrameCount() { m_frameCount = 1; }
 
+        const CL_Objects& getCl() const { return m_clObjects; }
         bool isValid() const { return m_isValid; }
         Format getPixelFormat() const { return m_format; }
         bool allowsAccumulation() const { return m_allowAccumulation; }

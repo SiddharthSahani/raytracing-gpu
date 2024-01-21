@@ -1,5 +1,4 @@
 
-#include "kernels/defines.h"
 #include "kernels/common.h"
 #include "kernels/random.h"
 #include "kernels/objects.h"

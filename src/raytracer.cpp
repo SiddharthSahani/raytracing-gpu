@@ -5,8 +5,7 @@
 #include <fstream>
 
 
-using namespace rt;
-
+namespace rt {
 
 std::string readFile(const char* filepath) {
     std::ifstream file(filepath, std::ios::in | std::ios::ate);
@@ -19,6 +18,18 @@ std::string readFile(const char* filepath) {
     return fileContents;
 }
 
+
+cl::ImageFormat getClImageFormat(Format format) {
+    switch (format) {
+        case Format::RGBA8:
+            return cl::ImageFormat(CL_RGBA, CL_UNORM_INT8);
+        case Format::RGBA32F:
+            return cl::ImageFormat(CL_RGBA, CL_FLOAT);
+        default:
+            RT_LOG("Not implemented in `getClImageFormat`");
+            return cl::ImageFormat(CL_RGBA, CL_UNORM_INT8);
+    }
+}
 
 
 Raytracer::Raytracer(glm::ivec2 imageShape, CL_Objects clObjects, Format format, bool allowAccumulation) {
@@ -92,7 +103,7 @@ void Raytracer::accumulatePixels() {
         RT_LOG("Instance is not valid");
         return;
     }
-    
+
     if (!m_allowAccumulation) {
         RT_LOG("Can not accumulate pixels, allow it from class constructor");
         return;
@@ -116,8 +127,15 @@ void Raytracer::accumulatePixels() {
 
 
 uint32_t Raytracer::getPixelBufferSize() const {
-    uint32_t componentSize = m_format == Format::RGBA8 ? sizeof(uint8_t) : sizeof(float);
-    return m_imageShape.x * m_imageShape.y * (componentSize * 4);
+    uint32_t numPixels = m_imageShape.x * m_imageShape.y;
+    switch (m_format) {
+        case Format::RGBA8:
+            return numPixels * 4 * sizeof(uint8_t);
+        case Format::RGBA32F:
+            return numPixels * 4 * sizeof(float);
+        default:
+            return 0;
+    }
 }
 
 
@@ -125,7 +143,7 @@ void Raytracer::createPixelBuffers() {
     int err = 0;
     uint32_t bufferSize = getPixelBufferSize();
 
-    cl::ImageFormat imgFormat = m_format == Format::RGBA8 ? cl::ImageFormat(CL_RGBA, CL_UNORM_INT8) : cl::ImageFormat(CL_RGBA, CL_FLOAT);
+    cl::ImageFormat imgFormat = getClImageFormat(m_format);
     m_frameImage = cl::Image2D(m_clObjects.context, CL_MEM_READ_WRITE, imgFormat, m_imageShape.x, m_imageShape.y, 0, nullptr, &err);
     if (m_allowAccumulation) {
         m_accumImage = cl::Image2D(m_clObjects.context, CL_MEM_READ_WRITE, imgFormat, m_imageShape.x, m_imageShape.y, 0, nullptr, &err);
@@ -179,7 +197,8 @@ std::string Raytracer::makeClProgramsBuildFlags() const {
 
     stream << " -DCONFIG__SAMPLE_COUNT=" << m_lastConfig.sampleCount;
     stream << " -DCONFIG__BOUNCE_LIMIT=" << m_lastConfig.bounceLimit;
-    stream << " -DPIXEL_FORMAT__" << (m_format == Format::RGBA8 ? "RGBA8" : "RGBA32F");
 
     return stream.str();
+}
+
 }

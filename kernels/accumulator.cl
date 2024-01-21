@@ -1,7 +1,4 @@
 
-#include "kernels/defines.h"
-
-
 kernel void accumulateFrameData(
     read_only image2d_t frameImage,
     read_write image2d_t accumImage,
