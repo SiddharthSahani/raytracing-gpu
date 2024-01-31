@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
     cl::Device device = rt::getAllClDevices(platform)[clDeviceIdx];
     rt::CL_Objects clObj = rt::createClObjects(platform, device);
 
-    rt::Raytracer raytracer({imageWidth, imageHeight}, clObj, rt::Format::RGBA8, true);
+    rt::Raytracer raytracer({imageWidth, imageHeight}, clObj, rt::Format::RGBA32F, true);
     rt::RaylibRenderer renderer(raytracer, {displayWidth, displayHeight}, kernelExecsPerSec);
 
     auto camera = rt::createCamera(60.0f, {imageWidth, imageHeight}, {0, 0, 6}, {0, 0, -1});
