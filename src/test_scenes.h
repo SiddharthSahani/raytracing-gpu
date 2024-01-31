@@ -103,3 +103,19 @@ rt::Scene createScene_5() {
 
     return scene;
 }
+
+
+std::vector<rt::internal::Scene> createAllScenes(cl::Context context, cl::CommandQueue queue) {
+    std::vector<rt::Scene> scenes = {
+        createScene_1(),
+        createScene_2(),
+        createScene_3(),
+        createScene_4(),
+        createScene_5(),
+    };
+    std::vector<rt::internal::Scene> res;
+    for (const auto& scene : scenes) {
+        res.push_back(scene.convert(context, queue));
+    }
+    return res;
+}
