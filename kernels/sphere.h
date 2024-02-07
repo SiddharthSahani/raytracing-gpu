@@ -11,7 +11,7 @@ typedef struct {
 } rt_Sphere;
 
 
-bool hitsSphere(global const rt_Sphere* sphere, const rt_Ray* ray, rt_HitRecord* record) {
+bool hitsSphere(const rt_Sphere* sphere, const rt_Ray* ray, rt_HitRecord* record) {
     float3 oc = ray->origin - sphere->position;
     float a = dot(ray->direction, ray->direction);
     float b = 2.0f * dot(oc, ray->direction);

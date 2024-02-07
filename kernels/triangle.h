@@ -12,7 +12,7 @@ typedef struct {
 } rt_Triangle;
 
 
-bool hitsTriangle(global const rt_Triangle* triangle, const rt_Ray* ray, rt_HitRecord* record) {
+bool hitsTriangle(const rt_Triangle* triangle, const rt_Ray* ray, rt_HitRecord* record) {
     float3 v0v1 = triangle->v1 - triangle->v0;
     float3 v0v2 = triangle->v2 - triangle->v0;
     float3 pvec = cross(ray->direction, v0v2);

@@ -19,12 +19,12 @@ typedef struct {
 } rt_Object;
 
 
-bool hitsObject(global const rt_Object* object, const rt_Ray* ray, rt_HitRecord* record) {
-    switch (object->type) {
+bool hitsObject(const rt_Object object, const rt_Ray* ray, rt_HitRecord* record) {
+    switch (object.type) {
         case OBJECT_TYPE_SPHERE:
-            return hitsSphere(&object->sphere, ray, record);
+            return hitsSphere(&object.sphere, ray, record);
         case OBJECT_TYPE_TRIANGLE:
-            return hitsTriangle(&object->triangle, ray, record);
+            return hitsTriangle(&object.triangle, ray, record);
         default:
             return false;
     }

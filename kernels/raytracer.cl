@@ -21,9 +21,9 @@ rt_HitRecord traceRay(const rt_Ray* ray, const rt_SceneParams* scene, global con
     record.hitDistance = FLT_MAX;
 
     for (int i = 0; i < scene->objectCount; i++) {
-        global const rt_Object* object = &objects[i];
+        const rt_Object object = &objects[i];
         if (hitsObject(object, ray, &record)) {
-            record.materialIndex = object->materialIndex;
+            record.materialIndex = object.materialIndex;
         }
     }
 
