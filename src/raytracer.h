@@ -5,6 +5,7 @@
 #include "src/clobjects.h"
 #include "src/raytracer/camera.h"
 #include "src/raytracer/scene.h"
+#include <map>
 
 
 namespace rt {
@@ -18,11 +19,11 @@ enum class Format {
 struct Config {
     cl_uint sampleCount;
     cl_uint bounceLimit;
-
-    bool operator!=(const Config& other) {
-        return (sampleCount != other.sampleCount) | (bounceLimit != other.bounceLimit);
-    }
 };
+
+bool operator<(const Config& a, const Config& b) {
+    return (a.sampleCount < b.sampleCount) || (a.bounceLimit < b.bounceLimit);
+}
 
 
 class Raytracer {
@@ -42,11 +43,11 @@ class Raytracer {
         const glm::ivec2& getImageShape() const { return m_imageShape; }
         uint32_t getFrameCount() const { return m_frameCount; }
         uint32_t getPixelBufferSize() const;
+        void createClKernels(const rt::Config& config);
 
     private:
         void createPixelBuffers();
-        void createClKernels();
-        std::string makeClProgramsBuildFlags() const;
+        std::string makeClProgramsBuildFlags(const rt::Config& config) const;
 
     private:
         glm::ivec2 m_imageShape;
@@ -55,11 +56,11 @@ class Raytracer {
         bool m_allowAccumulation;
         uint32_t m_frameCount = 1;
         bool m_isValid = true;
-        Config m_lastConfig = {.sampleCount = 0};
+
+        std::map<Config, cl::Kernel> m_kernels;
 
         cl::Image2D m_frameImage;
         cl::Image2D m_accumImage;
-        cl::Kernel m_raytracerKernel;
         cl::Kernel m_accumulatorKernel;
 
 };

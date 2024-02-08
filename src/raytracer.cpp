@@ -51,20 +51,23 @@ void Raytracer::renderScene(const internal::Scene& scene, const internal::Camera
         return;
     }
 
-    if (m_lastConfig != config) {
-        m_lastConfig = config;
-        createClKernels();
+
+
+    if (m_kernels.count(config) == 0) {
+        createClKernels(config);
     }
 
-    m_raytracerKernel.setArg(0, sizeof(internal::Camera), &camera);
-    m_raytracerKernel.setArg(1, sizeof(internal::SceneExtra), &scene.extra);
-    m_raytracerKernel.setArg(2, scene.objectsBuffer);
-    m_raytracerKernel.setArg(3, scene.materialsBuffer);
-    m_raytracerKernel.setArg(4, sizeof(uint32_t), &m_frameCount);
-    m_raytracerKernel.setArg(5, m_frameImage);
+    cl::Kernel raytracerKernel = m_kernels[config];
+
+    raytracerKernel.setArg(0, sizeof(internal::Camera), &camera);
+    raytracerKernel.setArg(1, sizeof(internal::SceneExtra), &scene.extra);
+    raytracerKernel.setArg(2, scene.objectsBuffer);
+    raytracerKernel.setArg(3, scene.materialsBuffer);
+    raytracerKernel.setArg(4, sizeof(uint32_t), &m_frameCount);
+    raytracerKernel.setArg(5, m_frameImage);
 
     m_clObjects.queue.enqueueNDRangeKernel(
-        m_raytracerKernel,
+        raytracerKernel,
         cl::NullRange,
         cl::NDRange(m_imageShape.x * m_imageShape.y),
         cl::NullRange
@@ -160,7 +163,7 @@ void Raytracer::createPixelBuffers() {
 }
 
 
-void Raytracer::createClKernels() {
+void Raytracer::createClKernels(const rt::Config& config) {
     std::string raytracerFileSource = readFile("kernels/raytracer.cl");
     std::string accumulatorFileSource = readFile("kernels/accumulator.cl");
 
@@ -172,7 +175,7 @@ void Raytracer::createClKernels() {
     cl::Program raytracerProgram = cl::Program(raytracerFileSource);
     cl::Program accumulatorProgram = cl::Program(accumulatorFileSource);
 
-    std::string buildFlags = makeClProgramsBuildFlags();
+    std::string buildFlags = makeClProgramsBuildFlags(config);
     RT_LOG("(Re)building Cl Programs with flags: %s", buildFlags.c_str());
 
     if (raytracerProgram.build(buildFlags.c_str()) || accumulatorProgram.build(buildFlags.c_str())) {
@@ -184,19 +187,19 @@ void Raytracer::createClKernels() {
         RT_LOG("Build log for accumulator:\n%s", accumulatorBuildLog.c_str());
     } else {
         RT_LOG("Built Cl programs successfully");
-        m_raytracerKernel = cl::Kernel(raytracerProgram, "raytraceScene");
+        m_kernels[config] = cl::Kernel(raytracerProgram, "raytraceScene");
         m_accumulatorKernel = cl::Kernel(accumulatorProgram, "accumulateFrameData");
     }
 }
 
 
-std::string Raytracer::makeClProgramsBuildFlags() const {
+std::string Raytracer::makeClProgramsBuildFlags(const rt::Config& config) const {
     std::stringstream stream;
 
     stream << " -cl-std=CL2.0";
 
-    stream << " -DCONFIG__SAMPLE_COUNT=" << m_lastConfig.sampleCount;
-    stream << " -DCONFIG__BOUNCE_LIMIT=" << m_lastConfig.bounceLimit;
+    stream << " -DCONFIG__SAMPLE_COUNT=" << config.sampleCount;
+    stream << " -DCONFIG__BOUNCE_LIMIT=" << config.bounceLimit;
 
     return stream.str();
 }
