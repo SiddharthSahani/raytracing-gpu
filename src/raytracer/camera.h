@@ -53,11 +53,17 @@ bool Camera::update(float timestep) {
     auto _delta = GetMouseDelta();
     glm::vec2 delta = glm::vec2(_delta.x, _delta.y) * m_params.sensitivity;
 
-    bool rmbPressed = IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
-    if (rmbPressed) {
+    static bool rmbPressed = false;
+
+    if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && !rmbPressed) {
+        rmbPressed = true;
         DisableCursor();
-    } else {
-        EnableCursor();
+    }
+    if (!IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) {
+        if (rmbPressed) {
+            rmbPressed = false;
+            EnableCursor();
+        }
         return false;
     }
 
