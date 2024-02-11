@@ -1,8 +1,10 @@
 
 #define RT_PRINT_LOG
+#define RT_BACKEND_RAYLIB
 
+#include "src/backend/backend_defines.h"
 #include "src/raytracer.cpp"
-#include "src/renderers/raylibrenderer.cpp"
+#include "src/backend/raylibrenderer.cpp"
 #include "src/test_scenes.h"
 
 

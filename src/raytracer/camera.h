@@ -4,7 +4,10 @@
 #include "src/raytracer/internal/camera.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+
+#ifdef RT_BACKEND_RAYLIB
 #include <raylib/raylib.h>
+#endif
 
 
 namespace rt {
@@ -20,7 +23,9 @@ class Camera {
 
     public:
         Camera(float fov, const glm::ivec2& imageSize, const glm::vec3& position, const glm::vec3& direction, const CameraParams& params);
+#ifdef RT_BACKEND_PRESENT
         bool update(float timestep);
+#endif
         const internal::Camera& getInternal() const { return m_internal; }
 
     private:
@@ -49,6 +54,9 @@ Camera::Camera(float fov, const glm::ivec2& imageSize, const glm::vec3& position
 }
 
 
+#ifdef RT_BACKEND_PRESENT
+
+#ifdef RT_BACKEND_RAYLIB
 bool Camera::update(float timestep) {
     auto _delta = GetMouseDelta();
     glm::vec2 delta = glm::vec2(_delta.x, _delta.y) * m_params.sensitivity;
@@ -122,5 +130,8 @@ bool Camera::update(float timestep) {
 
     return moved;
 }
+#endif
+
+#endif
 
 }
