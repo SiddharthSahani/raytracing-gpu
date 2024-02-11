@@ -22,7 +22,7 @@ int getSceneIndex(int sceneCount) {
 
 
 int getConfigIndex(int configCount) {
-    static int configIndex = 1;
+    static int configIndex = 0;
     if (IsKeyDown(KEY_C)) {
         configIndex += IsKeyPressed(KEY_RIGHT);
         configIndex -= IsKeyPressed(KEY_LEFT);
@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
     const int imageWidth = displayWidth / scale;
     const int imageHeight = displayHeight / scale;
     // kernel and display timers
-    const int displayUpdatesPerSec = 1;
+    const int displayUpdatesPerSec = 20;
     const int kernelExecsPerSec = 30;
 
     cl::Platform platform = rt::getAllClPlatforms()[clPlatformIdx];
@@ -52,14 +52,14 @@ int main(int argc, char* argv[]) {
     rt::Raytracer raytracer({imageWidth, imageHeight}, clObj, rt::Format::RGBA32F, true);
     rt::RaylibRenderer renderer(raytracer, {displayWidth, displayHeight}, kernelExecsPerSec);
 
-    auto camera = rt::createCamera(60.0f, {imageWidth, imageHeight}, {0, 0, 6}, {0, 0, -1});
+    auto camera = rt::Camera(60.0f, {imageWidth, imageHeight}, {0, 0, 6}, {0, 0, -1}, {});
     auto scenes = createAllScenes(clObj.context, clObj.queue);
     int numScenes = scenes.size();
 
     rt::Config configs[] = {
         {.sampleCount =  4, .bounceLimit = 5},
-        {.sampleCount = 16, .bounceLimit = 5},
-        {.sampleCount = 32, .bounceLimit = 5},
+        // {.sampleCount = 16, .bounceLimit = 5},
+        // {.sampleCount = 32, .bounceLimit = 5},
     };
 
     for (int i = 0; i < sizeof(configs) / sizeof(rt::Config); i++) {
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
     int kernelExecCount = -1;
 
     while (!WindowShouldClose()) {
-        if (isSceneChanged()) {
+        if (camera.update(GetFrameTime()) || isSceneChanged()) {
             raytracer.resetFrameCount();
             sceneIdx = getSceneIndex(numScenes);
             displayUpdateCount = 0;
@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
         configIdx = getConfigIndex(sizeof(configs) / sizeof(rt::Config));
 
         kernelExecCount++;
-        raytracer.renderScene(scenes[sceneIdx], camera, configs[configIdx]);
+        raytracer.renderScene(scenes[sceneIdx], camera.getInternal(), configs[configIdx]);
         raytracer.accumulatePixels();
 
         if (kernelExecCount % (kernelExecsPerSec / displayUpdatesPerSec) == 0 || isSceneChanged()) {
@@ -95,8 +95,9 @@ int main(int argc, char* argv[]) {
         DrawText(TextFormat("Kernel Exec Count: %d", kernelExecCount), 10, 10, 18, GREEN);
         DrawText(TextFormat("Display Update Count: %d", displayUpdateCount), 10, 30, 18, GREEN);
         DrawText(TextFormat("Samples per pixel: %d", configs[configIdx].sampleCount * kernelExecCount), 10, 50, 18, GREEN);
-        DrawText(TextFormat("Config.sampleCount: %d", configs[configIdx].sampleCount), 10, 70, 18, GREEN);
-        DrawFPS(10, 90);
+        DrawText(TextFormat("Current scene index:: %d", sceneIdx), 10, 70, 18, GREEN);
+        DrawText(TextFormat("Config.sampleCount: %d", configs[configIdx].sampleCount), 10, 90, 18, GREEN);
+        DrawFPS(10, 110);
         EndDrawing();
     }
 }
