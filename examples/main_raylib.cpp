@@ -22,7 +22,7 @@ int getSceneIndex(int sceneCount) {
 
 
 int getConfigIndex(int configCount) {
-    static int configIndex = 0;
+    static int configIndex = 1;
     if (IsKeyDown(KEY_C)) {
         configIndex += IsKeyPressed(KEY_RIGHT);
         configIndex -= IsKeyPressed(KEY_LEFT);
@@ -42,8 +42,8 @@ int main(int argc, char* argv[]) {
     const int imageWidth = displayWidth / scale;
     const int imageHeight = displayHeight / scale;
     // kernel and display timers
-    const int displayUpdatesPerSec = 20;
-    const int kernelExecsPerSec = 30;
+    const int displayUpdatesPerSec = 30;
+    const int kernelExecsPerSec = 30; // this also acts as FPS
 
     cl::Platform platform = rt::getAllClPlatforms()[clPlatformIdx];
     cl::Device device = rt::getAllClDevices(platform)[clDeviceIdx];
@@ -58,8 +58,8 @@ int main(int argc, char* argv[]) {
 
     rt::Config configs[] = {
         {.sampleCount =  4, .bounceLimit = 5},
-        // {.sampleCount = 16, .bounceLimit = 5},
-        // {.sampleCount = 32, .bounceLimit = 5},
+        {.sampleCount = 16, .bounceLimit = 5},
+        {.sampleCount = 32, .bounceLimit = 5},
     };
 
     for (int i = 0; i < sizeof(configs) / sizeof(rt::Config); i++) {
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
     int sceneIdx = 0;
     int configIdx = 1;
     int displayUpdateCount = 0;
-    int kernelExecCount = -1;
+    int kernelExecCount = 0;
 
     while (!WindowShouldClose()) {
         if (camera.update(GetFrameTime()) || isSceneChanged()) {
@@ -80,18 +80,19 @@ int main(int argc, char* argv[]) {
         }
         configIdx = getConfigIndex(sizeof(configs) / sizeof(rt::Config));
 
-        kernelExecCount++;
-        raytracer.renderScene(scenes[sceneIdx], camera.getInternal(), configs[configIdx]);
-        raytracer.accumulatePixels();
-
         if (kernelExecCount % (kernelExecsPerSec / displayUpdatesPerSec) == 0 || isSceneChanged()) {
             displayUpdateCount++;
             renderer.update();
         }
 
+        kernelExecCount++;
+        raytracer.renderScene(scenes[sceneIdx], camera.getInternal(), configs[configIdx]);
+        raytracer.accumulatePixels();
+
         BeginDrawing();
         ClearBackground(RAYWHITE);
         renderer.draw();
+
         DrawText(TextFormat("Kernel Exec Count: %d", kernelExecCount), 10, 10, 18, GREEN);
         DrawText(TextFormat("Display Update Count: %d", displayUpdateCount), 10, 30, 18, GREEN);
         DrawText(TextFormat("Samples per pixel: %d", configs[configIdx].sampleCount * kernelExecCount), 10, 50, 18, GREEN);
