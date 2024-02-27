@@ -142,9 +142,9 @@ void Raytracer::createPixelBuffers() {
     uint32_t totalBufferSize = bufferSize * (m_allowAccumulation ? 2 : 1);
 
     if (err) {
-        printf("Unable to allocate buffers of size %.3f MB\n", (float) totalBufferSize / (1024 * 1024));
+        printf("ERROR (`createPixelBuffers`): Unable to allocate buffers of size %.3f MB\n", (float) totalBufferSize / (1024 * 1024));
     } else {
-        printf("Allocated buffers of size %.3f MB\n", (float) totalBufferSize / (1024 * 1024));
+        printf("INFO (`createPixelBuffers`): Allocated buffers of size %.3f MB\n", (float) totalBufferSize / (1024 * 1024));
     }
 }
 
@@ -154,7 +154,7 @@ void Raytracer::createClKernels(const rt::Config& config) {
     std::string accumulatorFileSource = readFile("kernels/accumulator.cl");
 
     if (raytracerFileSource.empty() || accumulatorFileSource.empty()) {
-        printf("Something went wrong while reading the Cl files\n");
+        printf("ERROR (`createClKernels`): Something went wrong while reading the Cl files\n");
         return;
     }
 
@@ -162,17 +162,17 @@ void Raytracer::createClKernels(const rt::Config& config) {
     cl::Program accumulatorProgram = cl::Program(accumulatorFileSource);
 
     std::string buildFlags = makeClProgramsBuildFlags(config);
-    printf("(Re)building Cl Programs with flags: %s\n", buildFlags.c_str());
+    printf("INFO (`createClKernels`): (Re)building Cl Programs with flags: %s\n", buildFlags.c_str());
 
     if (raytracerProgram.build(buildFlags.c_str()) || accumulatorProgram.build(buildFlags.c_str())) {
-        printf("Encountered error while building Cl programs\n");
+        printf("ERROR (`createClKernels`): Encountered error while building Cl programs\n");
         std::string raytracerBuildLog = raytracerProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_clObjects.device);
         std::string accumulatorBuildLog = accumulatorProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_clObjects.device);
         printf("Build log for raytracer:\n%s\n", raytracerBuildLog.c_str());
         printf("--------------------------\n");
         printf("Build log for accumulator:\n%s\n", accumulatorBuildLog.c_str());
     } else {
-        printf("Built Cl programs successfully\n");
+        printf("INFO (`createClKernels`): Built Cl programs successfully\n");
         m_kernels[config] = cl::Kernel(raytracerProgram, "raytraceScene");
         m_accumulatorKernel = cl::Kernel(accumulatorProgram, "accumulateFrameData");
     }

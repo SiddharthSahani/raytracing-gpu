@@ -1,4 +1,7 @@
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb/stb_image_write.h>
+
 #include "src/raytracer.h"
 #include "src/raytracer/camera.h"
 #include "src/test_scenes.h"
@@ -21,12 +24,14 @@ using namespace std::chrono;
 }
 
 
-
 int main() {
+    // to select preffered gpu
     const int clPlatformIdx = 0;
     const int clDeviceIdx = 0;
+    // window and image size
     const int imageWidth = 1280;
     const int imageHeight = 720;
+    // number of samples per pixel
     const int sampleCount = 1024;
 
     cl::Platform platform = rt::getAllClPlatforms()[clPlatformIdx];

@@ -4,16 +4,27 @@ DEFINES  = -DCL_HPP_TARGET_OPENCL_VERSION=120 -DCL_HPP_MINIMUM_OPENCL_VERSION=12
 INCLUDES = -I . -I external/includes/
 LDFLAGS  = -L external/libs -lopencl
 
-HEADERS = $(wildcard src/*.h)
+
+COMMON_SOURCES = $(wildcard src/*.cpp)
+COMMON_OBJECTS = $(COMMON_SOURCES:.cpp=.o)
+
+BACKEND_RAYLIB_SOURCES = $(wildcard src/backend/raylib/*.cpp)
+BACKEND_RAYLIB_OBJECTS = $(BACKEND_RAYLIB_SOURCES:.cpp=.o)
+
+
+raylib: examples/main_raylib.cpp $(COMMON_OBJECTS) $(BACKEND_RAYLIB_OBJECTS)
+	g++ -o examples/main_raylib.exe $^ $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LDFLAGS) -lraylib -lgdi32 -lopengl32 -lwinmm
+
+
+nogui: examples/main_nogui.cpp $(COMMON_OBJECTS)
+	g++ -o examples/main_nogui.exe $^ $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LDFLAGS)
+
+
+%.o: %.cpp
+	g++ -o $@ -c $< $(DEFINES) $(CXXFLAGS) $(INCLUDES)
 
 
 clean:
 	rm -rf $(wildcard examples/*.exe)
-
-
-raylib: clean examples/main_raylib.cpp $(HEADERS)
-	g++ -o examples/main_raylib.exe examples/main_raylib.cpp src/clutils.cpp src/raytracer.cpp src/backend/raylib/renderer.cpp src/backend/raylib/camera.cpp $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LDFLAGS) -lraylib -lgdi32 -lwinmm
-
-
-nogui: clean examples/main_nogui.cpp $(HEADERS)
-	g++ -o examples/main_nogui.exe examples/main_nogui.cpp src/clutils.cpp src/raytracer.cpp -DSTB_IMAGE_WRITE_IMPLEMENTATION $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LDFLAGS)
+	rm -rf $(wildcard src/*.o)
+	rm -rf $(wildcard src/backend/raylib/*.o)
