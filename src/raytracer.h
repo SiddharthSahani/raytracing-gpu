@@ -2,7 +2,7 @@
 #pragma once
 
 #include "src/rtlog.h"
-#include "src/clobjects.h"
+#include "src/clutils.h"
 #include "src/raytracer/camera.h"
 #include "src/raytracer/scene.h"
 #include <map>

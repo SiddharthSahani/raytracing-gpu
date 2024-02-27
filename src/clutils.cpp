@@ -1,21 +1,11 @@
 
-#pragma once
-
-#include <CL/opencl.hpp>
+#include "src/clutils.h"
 
 
 namespace rt {
 
-struct CL_Objects {
-    cl::Platform platform;
-    cl::Device device;
-    cl::Context context;
-    cl::CommandQueue queue;
-};
-
-
 std::vector<cl::Platform> getAllClPlatforms() {
-std::vector<cl::Platform> res;
+    std::vector<cl::Platform> res;
     cl::Platform::get(&res);
     return res;
 }
@@ -23,7 +13,7 @@ std::vector<cl::Platform> res;
 
 std::vector<cl::Device> getAllClDevices(cl::Platform platform) {
     std::vector<cl::Device> res;
-    platform.getDevices(CL_DEVICE_TYPE_ALL, &res);
+    platform.getDevices(CL_DEVICE_TYPE_GPU, &res);
     return res;
 }
 
