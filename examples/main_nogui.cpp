@@ -1,8 +1,25 @@
 
-#include "src/rtlog.h"
 #include "src/raytracer.h"
 #include "src/raytracer/camera.h"
 #include "src/test_scenes.h"
+#include <chrono>
+
+using namespace std::chrono;
+
+
+#define RT_TIME_STMT(name, statement)                   \
+{                                                       \
+    auto startTime = high_resolution_clock::now();      \
+    statement;                                          \
+    auto stopTime = high_resolution_clock::now();       \
+    auto timeTaken_ns = (stopTime - startTime).count(); \
+    printf(                                             \
+        name " took %f secs (%f ms)\n",                 \
+        (float) timeTaken_ns / 1'000'000'000,           \
+        (float) timeTaken_ns / 1'000'000                \
+    );                                                  \
+}
+
 
 
 int main() {

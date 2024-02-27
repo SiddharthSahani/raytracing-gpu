@@ -1,6 +1,5 @@
 
 #include "src/raytracer.h"
-#include "src/rtlog.h"
 #include <stb/stb_image_write.h>
 #include <sstream>
 #include <fstream>
@@ -27,7 +26,7 @@ cl::ImageFormat getClImageFormat(Format format) {
         case Format::RGBA32F:
             return cl::ImageFormat(CL_RGBA, CL_FLOAT);
         default:
-            RT_LOG("Not implemented in `getClImageFormat`");
+            printf("ERROR (`getClImageFormat`): Not implemented\n");
             return cl::ImageFormat(CL_RGBA, CL_UNORM_INT8);
     }
 }
@@ -41,19 +40,12 @@ Raytracer::Raytracer(glm::ivec2 imageShape, CL_Objects clObjects, Format format,
     createPixelBuffers();
 
     if (m_format == Format::RGBA8 && m_allowAccumulation) {
-        RT_LOG("Note: Using RGBA8 format with accumulation gives bad results");
+        printf("WARN: Using RGBA8 format with accumulation gives bad results\n");
     }
 }
 
 
 void Raytracer::renderScene(const internal::Scene& scene, const internal::Camera& camera, const Config& config) {
-    if (!m_isValid) {
-        RT_LOG("Instance is not valid");
-        return;
-    }
-
-
-
     if (m_kernels.count(config) == 0) {
         createClKernels(config);
     }
@@ -90,7 +82,7 @@ void Raytracer::readPixels(void* outBuffer) const {
 
 bool Raytracer::saveAsImage(const char* filepath) const {
     if (m_format == Format::RGBA32F) {
-        RT_LOG("Does not work for this format as of now");
+        printf("ERROR (`Raytracer::saveAsImage`): Cannot save image for this format\n");
         return false;
     }
 
@@ -103,13 +95,7 @@ bool Raytracer::saveAsImage(const char* filepath) const {
 
 
 void Raytracer::accumulatePixels() {
-    if (!m_isValid) {
-        RT_LOG("Instance is not valid");
-        return;
-    }
-
     if (!m_allowAccumulation) {
-        RT_LOG("Can not accumulate pixels, allow it from class constructor");
         return;
     }
 
@@ -156,10 +142,9 @@ void Raytracer::createPixelBuffers() {
     uint32_t totalBufferSize = bufferSize * (m_allowAccumulation ? 2 : 1);
 
     if (err) {
-        RT_LOG("Unable to allocate buffers of size %.3f MB", (float) totalBufferSize / (1024 * 1024));
-        m_isValid = false;
+        printf("Unable to allocate buffers of size %.3f MB\n", (float) totalBufferSize / (1024 * 1024));
     } else {
-        RT_LOG("Allocated buffers of size %.3f MB", (float) totalBufferSize / (1024 * 1024));
+        printf("Allocated buffers of size %.3f MB\n", (float) totalBufferSize / (1024 * 1024));
     }
 }
 
@@ -169,7 +154,7 @@ void Raytracer::createClKernels(const rt::Config& config) {
     std::string accumulatorFileSource = readFile("kernels/accumulator.cl");
 
     if (raytracerFileSource.empty() || accumulatorFileSource.empty()) {
-        RT_LOG("Something went wrong while reading the Cl files");
+        printf("Something went wrong while reading the Cl files\n");
         return;
     }
 
@@ -177,17 +162,17 @@ void Raytracer::createClKernels(const rt::Config& config) {
     cl::Program accumulatorProgram = cl::Program(accumulatorFileSource);
 
     std::string buildFlags = makeClProgramsBuildFlags(config);
-    RT_LOG("(Re)building Cl Programs with flags: %s", buildFlags.c_str());
+    printf("(Re)building Cl Programs with flags: %s\n", buildFlags.c_str());
 
     if (raytracerProgram.build(buildFlags.c_str()) || accumulatorProgram.build(buildFlags.c_str())) {
-        RT_LOG("Encountered error while building Cl programs");
+        printf("Encountered error while building Cl programs\n");
         std::string raytracerBuildLog = raytracerProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_clObjects.device);
         std::string accumulatorBuildLog = accumulatorProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(m_clObjects.device);
-        RT_LOG("Build log for raytracer:\n%s", raytracerBuildLog.c_str());
-        RT_LOG("--------------------------");
-        RT_LOG("Build log for accumulator:\n%s", accumulatorBuildLog.c_str());
+        printf("Build log for raytracer:\n%s\n", raytracerBuildLog.c_str());
+        printf("--------------------------\n");
+        printf("Build log for accumulator:\n%s\n", accumulatorBuildLog.c_str());
     } else {
-        RT_LOG("Built Cl programs successfully");
+        printf("Built Cl programs successfully\n");
         m_kernels[config] = cl::Kernel(raytracerProgram, "raytraceScene");
         m_accumulatorKernel = cl::Kernel(accumulatorProgram, "accumulateFrameData");
     }

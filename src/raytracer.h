@@ -37,7 +37,6 @@ class Raytracer {
         void resetFrameCount() { m_frameCount = 1; }
 
         const CL_Objects& getCl() const { return m_clObjects; }
-        bool isValid() const { return m_isValid; }
         Format getPixelFormat() const { return m_format; }
         bool allowsAccumulation() const { return m_allowAccumulation; }
         const glm::ivec2& getImageShape() const { return m_imageShape; }
@@ -55,7 +54,6 @@ class Raytracer {
         Format m_format;
         bool m_allowAccumulation;
         uint32_t m_frameCount = 1;
-        bool m_isValid = true;
 
         std::map<Config, cl::Kernel> m_kernels;
 

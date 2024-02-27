@@ -1,6 +1,5 @@
 
 #include "src/backend/raylibrenderer.h"
-#include "src/rtlog.h"
 #include "src/raytracer.h"
 
 
@@ -18,7 +17,7 @@ static Texture createRaylibTexture(uint32_t width, uint32_t height, Format forma
             rlFormat = PIXELFORMAT_UNCOMPRESSED_R32G32B32A32;
             break;
         default:
-            RT_LOG("No corresponding format available in raylib");
+            printf("ERROR (`createRaylibTexture`): No corresponding format available in raylib\n");
             break;
     }
 
