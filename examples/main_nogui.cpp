@@ -1,8 +1,7 @@
 
-#define RT_PRINT_LOG
-
-#include "src/backend/backend_defines.h"
-#include "src/raytracer.cpp"
+#include "src/rtlog.h"
+#include "src/raytracer.h"
+#include "src/raytracer/camera.h"
 #include "src/test_scenes.h"
 
 
@@ -19,12 +18,12 @@ int main() {
 
     rt::Raytracer raytracer({imageWidth, imageHeight}, clObj, rt::Format::RGBA8, false);
 
-    auto camera = rt::Camera(60.0f, {imageWidth, imageHeight}, {0, 0, 6}, {0, 0, -1}, {});
+    auto camera = rt::createCamera(60.0f, {imageWidth, imageHeight}, {0, 0, 6}, {0, 0, -1});
     auto allScenes = createAllScenes(clObj.context, clObj.queue);
     auto scene = allScenes[7];
 
     RT_TIME_STMT("Time taken to compile cl prog: ", raytracer.createClKernels({.sampleCount = sampleCount, .bounceLimit = 5}));
-    RT_TIME_STMT("Time taken to render: ", raytracer.renderScene(scene, camera.getInternal(), {.sampleCount = sampleCount, .bounceLimit = 5}));
+    RT_TIME_STMT("Time taken to render: ", raytracer.renderScene(scene, camera, {.sampleCount = sampleCount, .bounceLimit = 5}));
 
     printf("Image saved: %d\n", raytracer.saveAsImage("test.png"));
 }

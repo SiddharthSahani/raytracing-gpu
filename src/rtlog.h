@@ -2,6 +2,8 @@
 #pragma once
 
 
+#define RT_PRINT_LOG
+
 #ifdef RT_PRINT_LOG
 
 #include <stdio.h>

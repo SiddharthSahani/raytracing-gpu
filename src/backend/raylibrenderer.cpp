@@ -1,5 +1,6 @@
 
 #include "src/backend/raylibrenderer.h"
+#include "src/rtlog.h"
 #include "src/raytracer.h"
 
 

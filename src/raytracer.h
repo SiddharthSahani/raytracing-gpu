@@ -1,11 +1,11 @@
 
 #pragma once
 
-#include "src/rtlog.h"
 #include "src/clutils.h"
-#include "src/raytracer/camera.h"
+#include "src/raytracer/internal/camera.h"
 #include "src/raytracer/scene.h"
 #include <map>
+#include <glm/vec2.hpp>
 
 
 namespace rt {
@@ -21,7 +21,7 @@ struct Config {
     cl_uint bounceLimit;
 };
 
-bool operator<(const Config& a, const Config& b) {
+static bool operator<(const Config& a, const Config& b) {
     return (a.sampleCount < b.sampleCount) || (a.bounceLimit < b.bounceLimit);
 }
 

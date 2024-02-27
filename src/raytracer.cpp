@@ -1,5 +1,6 @@
 
 #include "src/raytracer.h"
+#include "src/rtlog.h"
 #include <stb/stb_image_write.h>
 #include <sstream>
 #include <fstream>

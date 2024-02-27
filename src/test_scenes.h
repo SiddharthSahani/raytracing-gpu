@@ -194,7 +194,7 @@ std::vector<rt::internal::Scene> createAllScenes(cl::Context context, cl::Comman
     };
     std::vector<rt::internal::Scene> res;
     for (const auto& scene : scenes) {
-        res.push_back(scene.convert(context, queue));
+        res.push_back(convert(scene, context, queue));
     }
     return res;
 }
