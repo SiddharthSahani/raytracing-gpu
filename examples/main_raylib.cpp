@@ -21,7 +21,7 @@ int getSceneIndex(int sceneCount) {
 
 
 int getConfigIndex(int configCount) {
-    static int configIndex = 1;
+    static int configIndex = 0;
     if (rl::IsKeyDown(rl::KEY_C)) {
         configIndex += rl::IsKeyPressed(rl::KEY_RIGHT);
         configIndex -= rl::IsKeyPressed(rl::KEY_LEFT);
@@ -37,14 +37,14 @@ int main(int argc, char* argv[]) {
     // window and image size
     const int displayWidth = 1280;
     const int displayHeight = 720;
-    const float scale = 4.0f;
+    const float scale = 2.0f;
     const int imageWidth = displayWidth / scale;
     const int imageHeight = displayHeight / scale;
     // kernel and display timers
     const int displayUpdatesPerSec = 30;
     const int kernelExecsPerSec = 30; // this also acts as FPS
 
-    rl::TraceLogLevel(rl::LOG_NONE);
+    rl::SetTraceLogLevel(rl::LOG_WARNING);
     rl::InitWindow(displayWidth, displayHeight, "Raytracing [backend: raylib]");
 
     cl::Platform platform = rt::getAllClPlatforms()[clPlatformIdx];
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
     }
 
     int sceneIdx = 0;
-    int configIdx = 1;
+    int configIdx = 0;
     int displayUpdateCount = 0;
     int kernelExecCount = 0;
 

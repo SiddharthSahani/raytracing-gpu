@@ -14,6 +14,9 @@ rl::Texture createTexture(glm::ivec2 imageSize, Format format) {
         case Format::RGBA32F:
             rlFormat = rl::PIXELFORMAT_UNCOMPRESSED_R32G32B32A32;
             break;
+        case Format::RGBA16F:
+            rlFormat = rl::PIXELFORMAT_UNCOMPRESSED_R16G16B16A16;
+            break;
         default:
             printf("ERROR (`createTexture`): Not implemented for Format::%d\n", format);
     }

@@ -25,6 +25,8 @@ cl::ImageFormat getClImageFormat(Format format) {
             return cl::ImageFormat(CL_RGBA, CL_UNORM_INT8);
         case Format::RGBA32F:
             return cl::ImageFormat(CL_RGBA, CL_FLOAT);
+        case Format::RGBA16F:
+            return cl::ImageFormat(CL_RGBA, CL_HALF_FLOAT);
         default:
             printf("ERROR (`getClImageFormat`): Not implemented\n");
             return cl::ImageFormat(CL_RGBA, CL_UNORM_INT8);
@@ -70,8 +72,6 @@ void Raytracer::renderScene(const internal::Scene& scene, const internal::Camera
 
 
 void Raytracer::readPixels(void* outBuffer) const {
-    uint32_t bufferSize = getPixelBufferSize();
-
     if (m_allowAccumulation) {
         m_clObjects.queue.enqueueReadImage(m_accumImage, true, {0, 0, 0}, {(size_t) m_imageShape.x, (size_t) m_imageShape.y, 1}, 0, 0, outBuffer);
     } else {
@@ -81,8 +81,8 @@ void Raytracer::readPixels(void* outBuffer) const {
 
 
 bool Raytracer::saveAsImage(const char* filepath) const {
-    if (m_format == Format::RGBA32F) {
-        printf("ERROR (`Raytracer::saveAsImage`): Cannot save image for this format\n");
+    if (m_format != Format::RGBA8) {
+        printf("ERROR (`Raytracer::saveAsImage`): Cannot save image for Format::%d\n", m_format);
         return false;
     }
 
@@ -123,7 +123,10 @@ uint32_t Raytracer::getPixelBufferSize() const {
             return numPixels * 4 * sizeof(uint8_t);
         case Format::RGBA32F:
             return numPixels * 4 * sizeof(float);
+        case Format::RGBA16F:
+            return numPixels * 4 * sizeof(float) / 2;
         default:
+            printf("ERROR (`Raytracer::getPixelBufferSize`): Not implement for Format::%d\n", m_format);
             return 0;
     }
 }

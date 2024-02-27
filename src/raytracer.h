@@ -11,8 +11,9 @@
 namespace rt {
 
 enum class Format {
-    RGBA8,  // 4x1= 4 bytes/pixel
-    RGBA32F // 4x4=16 bytes/pixel
+    RGBA8,   // 4x1 =  4 bytes per pixel
+    RGBA32F, // 4x4 = 16 bytes per pixel
+    RGBA16F  // 4*2 =  8 bytes per pixel
 };
 
 
