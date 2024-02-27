@@ -1,5 +1,5 @@
 
-#include "src/backend/raylibcamera.h"
+#include "src/backend/raylib/camera.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <raylib/raylib.h>
@@ -7,7 +7,7 @@
 
 namespace rt {
 
-Camera::Camera(float fov, const glm::ivec2& imageSize, const glm::vec3& position, const glm::vec3& direction, const CameraParams& params)
+Camera::Camera(float fov, glm::ivec2 imageSize, glm::vec3 position, glm::vec3 direction, CameraParams params)
 : m_position(position), m_direction(direction), m_params(params) {
 
     glm::mat4 invProjMat = glm::inverse(glm::perspectiveFov(

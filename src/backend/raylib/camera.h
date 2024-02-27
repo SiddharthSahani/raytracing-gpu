@@ -17,7 +17,7 @@ struct CameraParams {
 class Camera {
 
     public:
-        Camera(float fov, const glm::ivec2& imageSize, const glm::vec3& position, const glm::vec3& direction, const CameraParams& params);
+        Camera(float fov, glm::ivec2 imageSize,glm::vec3 position, glm::vec3 direction, CameraParams params);
         bool update(float timestep);
         const internal::Camera& getInternal() const { return m_internal; }
 
