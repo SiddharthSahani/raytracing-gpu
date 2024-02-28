@@ -24,6 +24,10 @@ std::vector<cl::Device> getAllClDevices(cl::Platform platform);
 CL_Objects createClObjects(cl::Platform platform, cl::Device device);
 
 
+// checks for cl-gl interop (memory sharing)
+bool supports_clGlInterop(cl::Device device);
+
+
 // creates the context with cl-gl interop enabled
 // Note: Opengl should be initialized
 CL_Objects createClObjects_withInterop(cl::Platform platform, cl::Device device);

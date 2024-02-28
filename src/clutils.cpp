@@ -32,6 +32,13 @@ CL_Objects createClObjects(cl::Platform platform, cl::Device device) {
 }
 
 
+bool supports_clGlInterop(cl::Device device) {
+    std::string allExtensions = device.getInfo<CL_DEVICE_EXTENSIONS>();
+    const char* ext = "cl_khr_gl_sharing";
+    return allExtensions.find(ext) != std::string::npos;
+}
+
+
 CL_Objects createClObjects_withInterop(cl::Platform platform, cl::Device device) {
     cl_context_properties props[] = {
         CL_GL_CONTEXT_KHR, (cl_context_properties) wglGetCurrentContext(),
