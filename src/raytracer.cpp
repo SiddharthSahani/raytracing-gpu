@@ -34,12 +34,18 @@ cl::ImageFormat getClImageFormat(Format format) {
 }
 
 
-Raytracer::Raytracer(glm::ivec2 imageShape, CL_Objects clObjects, Format format, bool allowAccumulation) {
+Raytracer::Raytracer(glm::ivec2 imageShape, CL_Objects clObjects, Format format, bool allowAccumulation, uint32_t glTextureId) {
     m_imageShape = imageShape;
     m_clObjects = clObjects;
     m_format = format;
     m_allowAccumulation = allowAccumulation;
-    createPixelBuffers();
+    m_clGlInterop = glTextureId != 0;
+
+    if (m_clGlInterop) {
+        createImageBuffers(glTextureId);
+    } else {
+        createImageBuffers();
+    }
 
     if (m_format == Format::RGBA8 && m_allowAccumulation) {
         printf("WARN: Using RGBA8 format with accumulation gives bad results\n");
@@ -59,7 +65,12 @@ void Raytracer::renderScene(const internal::Scene& scene, const internal::Camera
     raytracerKernel.setArg(2, scene.objectsBuffer);
     raytracerKernel.setArg(3, scene.materialsBuffer);
     raytracerKernel.setArg(4, sizeof(uint32_t), &m_frameCount);
-    raytracerKernel.setArg(5, m_frameImage);
+    
+    if (m_clGlInterop && !m_allowAccumulation) {
+        raytracerKernel.setArg(5, m_frameImageGl);
+    } else {
+        raytracerKernel.setArg(5, m_frameImage);
+    }
 
     m_clObjects.queue.enqueueNDRangeKernel(
         raytracerKernel,
@@ -100,9 +111,14 @@ void Raytracer::accumulatePixels() {
     }
 
     m_accumulatorKernel.setArg(0, m_frameImage);
-    m_accumulatorKernel.setArg(1, m_accumImage);
     m_accumulatorKernel.setArg(2, sizeof(uint32_t), &m_frameCount);
     m_accumulatorKernel.setArg(3, sizeof(uint32_t), &m_imageShape.x);
+
+    if (m_clGlInterop) {
+        m_accumulatorKernel.setArg(1, m_accumImageGl);
+    } else {
+        m_accumulatorKernel.setArg(1, m_accumImage);
+    }
 
     m_clObjects.queue.enqueueNDRangeKernel(
         m_accumulatorKernel,
@@ -132,22 +148,66 @@ uint32_t Raytracer::getPixelBufferSize() const {
 }
 
 
-void Raytracer::createPixelBuffers() {
-    int err = 0;
-    uint32_t bufferSize = getPixelBufferSize();
+void Raytracer::createImageBuffers() {
+    int err[2] = {0, 0};
+    float bufferSizeMB = (float) getPixelBufferSize() / (1024 * 1024);
 
     cl::ImageFormat imgFormat = getClImageFormat(m_format);
-    m_frameImage = cl::Image2D(m_clObjects.context, CL_MEM_READ_WRITE, imgFormat, m_imageShape.x, m_imageShape.y, 0, nullptr, &err);
+    m_frameImage = cl::Image2D(m_clObjects.context, CL_MEM_READ_WRITE, imgFormat, m_imageShape.x, m_imageShape.y, 0, nullptr, &err[0]);
     if (m_allowAccumulation) {
-        m_accumImage = cl::Image2D(m_clObjects.context, CL_MEM_READ_WRITE, imgFormat, m_imageShape.x, m_imageShape.y, 0, nullptr, &err);
+        m_accumImage = cl::Image2D(m_clObjects.context, CL_MEM_READ_WRITE, imgFormat, m_imageShape.x, m_imageShape.y, 0, nullptr, &err[1]);
     }
 
-    uint32_t totalBufferSize = bufferSize * (m_allowAccumulation ? 2 : 1);
-
-    if (err) {
-        printf("ERROR (`createPixelBuffers`): Unable to allocate buffers of size %.3f MB\n", (float) totalBufferSize / (1024 * 1024));
+    if (err[0]) {
+        printf("ERROR (`createImageBuffers`): Unable to allocate %.3f MB for m_frameImage\n", bufferSizeMB);
     } else {
-        printf("INFO (`createPixelBuffers`): Allocated buffers of size %.3f MB\n", (float) totalBufferSize / (1024 * 1024));
+        printf("INFO (`createImageBuffers`): Allocated %.3f MB for m_frameImage\n", bufferSizeMB);
+    }
+
+    if (m_allowAccumulation) {
+        if (err[1]) {
+            printf("ERROR (`createImageBuffers`): Unable to allocate %.3f MB for m_accumImage\n", bufferSizeMB);
+        } else {
+            printf("INFO (`createImageBuffers`): Allocated %.3f MB for m_accumImage\n", bufferSizeMB);
+        }
+    }
+}
+
+
+void Raytracer::createImageBuffers(uint32_t glTextureId) {
+    int err[2] = {0, 0};
+    float bufferSizeMB = (float) getPixelBufferSize() / (1024 * 1024);
+
+    cl::ImageFormat imgFormat = getClImageFormat(m_format);
+
+    if (m_allowAccumulation) {
+        m_frameImage = cl::Image2D(m_clObjects.context, CL_MEM_READ_WRITE, imgFormat, m_imageShape.x, m_imageShape.y, 0, nullptr, &err[0]);
+        // GL_TEXTURE_2D = 0x0DE1
+        m_accumImageGl = cl::ImageGL(m_clObjects.context, CL_MEM_READ_WRITE, 0x0DE1, 0, glTextureId, &err[1]);
+    } else {
+        m_frameImageGl = cl::ImageGL(m_clObjects.context, CL_MEM_READ_WRITE, 0x0DE1, 0, glTextureId, &err[0]);
+    }
+
+    if (err[0]) {
+        if (m_allowAccumulation) {
+            printf("ERROR (`createImageBuffers`): Unable to allocate %.3f MB for m_frameImage\n", bufferSizeMB);
+        } else {
+            printf("ERROR (`createImageBuffers`): Unable to create m_frameImageGl with textureId = %d\n", glTextureId);
+        }
+    } else {
+        if (m_allowAccumulation) {
+            printf("INFO (`createImageBuffers`): Allocated %.3f MB for m_frameImage\n", bufferSizeMB);
+        } else {
+            printf("INFO (`createImageBuffers`): Created m_frameImageGl with textureId = %d\n", glTextureId);
+        }
+    }
+
+    if (m_allowAccumulation) {
+        if (err[1]) {
+            printf("ERROR (`createImageBuffers`): Unable to create m_accumImageGl with textureId = %d\n", glTextureId);
+        } else {
+            printf("INFO (`createImageBuffers`): Created m_accumImageGl with textureId = %d\n", glTextureId);
+        }
     }
 }
 

@@ -17,7 +17,7 @@ raylib: examples/main_raylib.cpp $(COMMON_OBJECTS) $(BACKEND_RAYLIB_OBJECTS)
 
 
 nogui: examples/main_nogui.cpp $(COMMON_OBJECTS)
-	g++ -o examples/main_nogui.exe $^ $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LDFLAGS)
+	g++ -o examples/main_nogui.exe $^ $(CXXFLAGS) $(DEFINES) $(INCLUDES) $(LDFLAGS) -lopengl32
 
 
 %.o: %.cpp

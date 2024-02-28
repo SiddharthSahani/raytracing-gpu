@@ -21,7 +21,7 @@ rl::Texture createTexture(glm::ivec2 imageSize, Format format) {
             printf("ERROR (`createTexture`): Not implemented for Format::%d\n", format);
     }
 
-    rl::Image temp = rl::GenImageGradientRadial(imageSize.x, imageSize.y, 0.3f, rl::RED, rl::BLUE);
+    rl::Image temp = rl::GenImageGradientRadial(imageSize.x, imageSize.y, 0.7f, rl::RED, rl::BLUE);
     rl::ImageFormat(&temp, rlFormat);
     rl::Texture out = rl::LoadTextureFromImage(temp);
     rl::UnloadImage(temp);
@@ -29,8 +29,8 @@ rl::Texture createTexture(glm::ivec2 imageSize, Format format) {
 }
 
 
-Renderer::Renderer(const Raytracer& raytracer, glm::ivec2 windowSize, int targetFps, bool clglInterop)
-: m_raytracer(raytracer), m_windowSize(windowSize), m_clglInterop(clglInterop) {
+Renderer::Renderer(const Raytracer& raytracer, glm::ivec2 windowSize, int targetFps, rl::Texture outTexture, bool clglInterop)
+: m_raytracer(raytracer), m_windowSize(windowSize), m_outTexture(outTexture), m_clglInterop(clglInterop) {
     rl::SetTargetFPS(targetFps);
 
     if (m_clglInterop) {
@@ -39,9 +39,6 @@ Renderer::Renderer(const Raytracer& raytracer, glm::ivec2 windowSize, int target
         uint32_t bufferSize = m_raytracer.getPixelBufferSize();
         m_outBuffer = new uint8_t[bufferSize];
     }
-
-    glm::ivec2 imageSize = raytracer.getImageShape();
-    m_outTexture = createTexture(imageSize, raytracer.getPixelFormat());
 }
 
 

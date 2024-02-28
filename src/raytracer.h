@@ -30,7 +30,7 @@ static bool operator<(const Config& a, const Config& b) {
 class Raytracer {
 
     public:
-        Raytracer(glm::ivec2 imageShape, CL_Objects clObjects, Format format, bool allowAccumulation);
+        Raytracer(glm::ivec2 imageShape, CL_Objects clObjects, Format format, bool allowAccumulation, uint32_t glTextureId = 0);
         void renderScene(const internal::Scene& scene, const internal::Camera& camera, const Config& config);
         void readPixels(void* outBuffer) const;
         bool saveAsImage(const char* filepath) const;
@@ -46,7 +46,8 @@ class Raytracer {
         void createClKernels(const rt::Config& config);
 
     private:
-        void createPixelBuffers();
+        void createImageBuffers();
+        void createImageBuffers(uint32_t glTextureId);
         std::string makeClProgramsBuildFlags(const rt::Config& config) const;
 
     private:
@@ -54,13 +55,18 @@ class Raytracer {
         CL_Objects m_clObjects;
         Format m_format;
         bool m_allowAccumulation;
+        bool m_clGlInterop;
         uint32_t m_frameCount = 1;
 
         std::map<Config, cl::Kernel> m_kernels;
+        cl::Kernel m_accumulatorKernel;
 
         cl::Image2D m_frameImage;
         cl::Image2D m_accumImage;
-        cl::Kernel m_accumulatorKernel;
+
+        // one of them will be used if clgl interop is present
+        cl::ImageGL m_frameImageGl;
+        cl::ImageGL m_accumImageGl;
 
 };
 

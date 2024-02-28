@@ -51,7 +51,8 @@ int main(int argc, char* argv[]) {
     cl::Device device = rt::getAllClDevices(platform)[clDeviceIdx];
     rt::CL_Objects clObj;
 
-    if (rt::supports_clGlInterop(device)) {
+    bool clGlInterop = rt::supports_clGlInterop(device);
+    if (clGlInterop) {
         printf("Creating cl context with gl-interop\n");
         clObj = rt::createClObjects_withInterop(platform, device);
     } else {
@@ -59,8 +60,10 @@ int main(int argc, char* argv[]) {
         clObj = rt::createClObjects(platform, device);
     }
 
-    rt::Raytracer raytracer({imageWidth, imageHeight}, clObj, rt::Format::RGBA32F, true);
-    rt::Renderer renderer(raytracer, {displayWidth, displayHeight}, kernelExecsPerSec, false);
+    rt::Format imgFormat = rt::Format::RGBA32F;
+    rl::Texture outTexture = rt::createTexture({imageWidth, imageHeight}, imgFormat);
+    rt::Raytracer raytracer({imageWidth, imageHeight}, clObj, imgFormat, true, clGlInterop ? outTexture.id : 0);
+    rt::Renderer renderer(raytracer, {displayWidth, displayHeight}, kernelExecsPerSec, outTexture, clGlInterop);
 
     auto camera = rt::Camera(60.0f, {imageWidth, imageHeight}, {0, 0, 6}, {0, 0, -1}, {.speed = 10.0f});
     auto scenes = createAllScenes(clObj.context, clObj.queue);
