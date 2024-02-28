@@ -60,9 +60,9 @@ int main(int argc, char* argv[]) {
     }
 
     rt::Raytracer raytracer({imageWidth, imageHeight}, clObj, rt::Format::RGBA32F, true);
-    rt::Renderer renderer(raytracer, {displayWidth, displayHeight}, kernelExecsPerSec);
+    rt::Renderer renderer(raytracer, {displayWidth, displayHeight}, kernelExecsPerSec, false);
 
-    auto camera = rt::Camera(60.0f, {imageWidth, imageHeight}, {0, 0, 6}, {0, 0, -1}, {});
+    auto camera = rt::Camera(60.0f, {imageWidth, imageHeight}, {0, 0, 6}, {0, 0, -1}, {.speed = 10.0f});
     auto scenes = createAllScenes(clObj.context, clObj.queue);
     int numScenes = scenes.size();
 

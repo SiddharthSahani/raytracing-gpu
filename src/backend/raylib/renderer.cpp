@@ -29,12 +29,16 @@ rl::Texture createTexture(glm::ivec2 imageSize, Format format) {
 }
 
 
-Renderer::Renderer(const Raytracer& raytracer, glm::ivec2 windowSize, int targetFps)
-: m_raytracer(raytracer), m_windowSize(windowSize) {
+Renderer::Renderer(const Raytracer& raytracer, glm::ivec2 windowSize, int targetFps, bool clglInterop)
+: m_raytracer(raytracer), m_windowSize(windowSize), m_clglInterop(clglInterop) {
     rl::SetTargetFPS(targetFps);
 
-    uint32_t bufferSize = m_raytracer.getPixelBufferSize();
-    m_outBuffer = new uint8_t[bufferSize];
+    if (m_clglInterop) {
+        m_outBuffer = nullptr;
+    } else {
+        uint32_t bufferSize = m_raytracer.getPixelBufferSize();
+        m_outBuffer = new uint8_t[bufferSize];
+    }
 
     glm::ivec2 imageSize = raytracer.getImageShape();
     m_outTexture = createTexture(imageSize, raytracer.getPixelFormat());
@@ -49,8 +53,10 @@ Renderer::~Renderer() {
 
 
 void Renderer::update() {
-    m_raytracer.readPixels(m_outBuffer);
-    rl::UpdateTexture(m_outTexture, m_outBuffer);
+    if (!m_clglInterop) {
+        m_raytracer.readPixels(m_outBuffer);
+        rl::UpdateTexture(m_outTexture, m_outBuffer);
+    }
 }
 
 
