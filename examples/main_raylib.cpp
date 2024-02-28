@@ -49,7 +49,8 @@ int main(int argc, char* argv[]) {
 
     cl::Platform platform = rt::getAllClPlatforms()[clPlatformIdx];
     cl::Device device = rt::getAllClDevices(platform)[clDeviceIdx];
-    rt::CL_Objects clObj = rt::createClObjects(platform, device);
+    // rt::CL_Objects clObj = rt::createClObjects(platform, device);
+    rt::CL_Objects clObj = rt::createClObjects_withInterop(platform, device);
 
     rt::Raytracer raytracer({imageWidth, imageHeight}, clObj, rt::Format::RGBA32F, true);
     rt::Renderer renderer(raytracer, {displayWidth, displayHeight}, kernelExecsPerSec);

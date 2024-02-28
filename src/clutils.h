@@ -23,4 +23,9 @@ std::vector<cl::Device> getAllClDevices(cl::Platform platform);
 // creates context normally
 CL_Objects createClObjects(cl::Platform platform, cl::Device device);
 
+
+// creates the context with cl-gl interop enabled
+// Note: Opengl should be initialized
+CL_Objects createClObjects_withInterop(cl::Platform platform, cl::Device device);
+
 }

@@ -1,5 +1,9 @@
 
 #include "src/clutils.h"
+// required for creating cl context
+#define  GLFW_EXPOSE_NATIVE_WGL
+#include <glfw/glfw3.h>
+#include <glfw/glfw3native.h>
 
 
 namespace rt {
@@ -23,6 +27,23 @@ CL_Objects createClObjects(cl::Platform platform, cl::Device device) {
     res.platform = platform;
     res.device = device;
     res.context = cl::Context(device);
+    res.queue = cl::CommandQueue(res.context, res.device);
+    return res;
+}
+
+
+CL_Objects createClObjects_withInterop(cl::Platform platform, cl::Device device) {
+    cl_context_properties props[] = {
+        CL_GL_CONTEXT_KHR, (cl_context_properties) wglGetCurrentContext(),
+        CL_WGL_HDC_KHR, (cl_context_properties) wglGetCurrentDC(),
+        CL_CONTEXT_PLATFORM, (cl_context_properties) platform(),
+        0
+    };
+
+    CL_Objects res;
+    res.platform = platform;
+    res.device = device;
+    res.context = cl::Context(device, props);
     res.queue = cl::CommandQueue(res.context, res.device);
     return res;
 }
