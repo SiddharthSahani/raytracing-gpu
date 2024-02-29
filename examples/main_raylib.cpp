@@ -70,9 +70,9 @@ int main(int argc, char* argv[]) {
     int numScenes = scenes.size();
 
     rt::Config configs[] = {
-        {.sampleCount =  4, .bounceLimit = 5},
         {.sampleCount = 16, .bounceLimit = 5},
         {.sampleCount = 32, .bounceLimit = 5},
+        {.sampleCount =  4, .bounceLimit = 5},
     };
 
     for (int i = 0; i < sizeof(configs) / sizeof(rt::Config); i++) {
