@@ -11,6 +11,11 @@ std::string readFile(const char* filepath) {
     std::ifstream file(filepath, std::ios::in | std::ios::ate);
 
     int fileSize = file.tellg();
+    if (fileSize == -1) {
+        // file doesnt exist
+        printf("ERROR (`readFile`): Unable to read %s\n", filepath);
+        fileSize = 0;
+    }
     std::string fileContents(fileSize, '\0');
 
     file.seekg(0);

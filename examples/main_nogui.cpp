@@ -17,7 +17,7 @@ using namespace std::chrono;
     auto stopTime = high_resolution_clock::now();       \
     auto timeTaken_ns = (stopTime - startTime).count(); \
     printf(                                             \
-        name " took %f secs (%f ms)\n",                 \
+        name " %f secs (%f ms)\n",                 \
         (float) timeTaken_ns / 1'000'000'000,           \
         (float) timeTaken_ns / 1'000'000                \
     );                                                  \
@@ -44,8 +44,8 @@ int main() {
     auto allScenes = createAllScenes(clObj.context, clObj.queue);
     auto scene = allScenes[7];
 
-    RT_TIME_STMT("Time taken to compile cl prog: ", raytracer.createClKernels({.sampleCount = sampleCount, .bounceLimit = 5}));
-    RT_TIME_STMT("Time taken to render: ", raytracer.renderScene(scene, camera, {.sampleCount = sampleCount, .bounceLimit = 5}));
+    RT_TIME_STMT("Time taken to compile cl prog:", raytracer.createClKernels({.sampleCount = sampleCount, .bounceLimit = 5}));
+    RT_TIME_STMT("Time taken to render:", raytracer.renderScene(scene, camera, {.sampleCount = sampleCount, .bounceLimit = 5}));
 
     printf("Image saved: %s\n", raytracer.saveAsImage("test.png") ? "true" : "false");
 }
