@@ -121,13 +121,15 @@ void Raytracer::accumulatePixels() {
     }
 
     m_accumulatorKernel.setArg(0, m_frameImage);
-    m_accumulatorKernel.setArg(2, sizeof(uint32_t), &m_frameCount);
-    m_accumulatorKernel.setArg(3, sizeof(uint32_t), &m_imageShape.x);
+    m_accumulatorKernel.setArg(3, sizeof(uint32_t), &m_frameCount);
+    m_accumulatorKernel.setArg(4, sizeof(uint32_t), &m_imageShape.x);
 
     if (m_clGlInterop) {
         m_accumulatorKernel.setArg(1, m_accumImageGl);
+        m_accumulatorKernel.setArg(2, m_accumImageGl);
     } else {
         m_accumulatorKernel.setArg(1, m_accumImage);
+        m_accumulatorKernel.setArg(2, m_accumImage);
     }
 
     m_clObjects.queue.enqueueNDRangeKernel(
@@ -254,8 +256,6 @@ void Raytracer::createClKernels(const rt::Config& config) {
 
 std::string Raytracer::makeClProgramsBuildFlags(const rt::Config& config) const {
     std::stringstream stream;
-
-    stream << " -cl-std=CL2.0";
 
     stream << " -DCONFIG__SAMPLE_COUNT=" << config.sampleCount;
     stream << " -DCONFIG__BOUNCE_LIMIT=" << config.bounceLimit;
