@@ -88,10 +88,15 @@ void Raytracer::renderScene(const internal::Scene& scene, const internal::Camera
 
 
 void Raytracer::readPixels(void* outBuffer) const {
+    cl::size_t<3> region;
+    region[0] = m_imageShape.x;
+    region[1] = m_imageShape.y;
+    region[2] = 1;
+
     if (m_allowAccumulation) {
-        m_clObjects.queue.enqueueReadImage(m_accumImage, true, {0, 0, 0}, {(size_t) m_imageShape.x, (size_t) m_imageShape.y, 1}, 0, 0, outBuffer);
+        m_clObjects.queue.enqueueReadImage(m_accumImage, true, cl::size_t<3>(), region, 0, 0, outBuffer);
     } else {
-        m_clObjects.queue.enqueueReadImage(m_frameImage, true, {0, 0, 0}, {(size_t) m_imageShape.x, (size_t) m_imageShape.y, 1}, 0, 0, outBuffer);
+        m_clObjects.queue.enqueueReadImage(m_frameImage, true, cl::size_t<3>(), region, 0, 0, outBuffer);
     }
 }
 

@@ -5,6 +5,7 @@
 #include "src/raytracer/objects.h"
 #include "src/raytracer/material.h"
 #include <vector>
+#include <algorithm> // std::find
 
 
 namespace rt {

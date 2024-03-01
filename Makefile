@@ -1,7 +1,7 @@
 
 CXXFLAGS =
-DEFINES  = -DCL_HPP_TARGET_OPENCL_VERSION=120 -DCL_HPP_MINIMUM_OPENCL_VERSION=120
-INCLUDES = -I . -I external/includes/
+DEFINES  =
+INCLUDES = -I . -I external/
 LDFLAGS  = -L external/libs -lopencl
 
 

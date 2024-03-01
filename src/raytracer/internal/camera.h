@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <CL/opencl.hpp>
+#include <CL/cl.hpp>
 
 
 namespace rt::internal {
