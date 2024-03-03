@@ -3,6 +3,7 @@
 #include "src/backend/raylib/renderer.h"
 #include "src/backend/raylib/camera.h"
 #include "src/test_scenes.h"
+#include "src/scene_loader.h"
 
 
 bool isSceneChanged() {
@@ -66,8 +67,31 @@ int main(int argc, char* argv[]) {
     rt::Renderer renderer(raytracer, {displayWidth, displayHeight}, kernelExecsPerSec, outTexture, clGlInterop);
 
     auto camera = rt::Camera(60.0f, {imageWidth, imageHeight}, {0, 0, 6}, {0, 0, -1}, {.speed = 10.0f});
-    auto scenes = createAllScenes(clObj.context, clObj.queue);
+
+    std::vector<rt::internal::Scene> scenes;
+
+    if (argc == 1) {
+        scenes = createAllScenes(clObj.context, clObj.queue);
+    } else {
+        for (int i = 1; i < argc; i++) {
+            bool success;
+            auto _scene = rt::loadScene(argv[i], &success);
+            if (success) {
+                printf("'%s' loaded successfully\n", argv[i]);
+                scenes.push_back(
+                    convert(_scene, clObj.context, clObj.queue)
+                );
+            } else {
+                printf("'%s' failed to load\n", argv[i]);
+            }
+        }
+    }
+
     int numScenes = scenes.size();
+    if (numScenes == 0) {
+        printf("No valid scene present\n");
+        return 1;
+    }
 
     rt::Config configs[] = {
         {.sampleCount = 16, .bounceLimit = 5},
