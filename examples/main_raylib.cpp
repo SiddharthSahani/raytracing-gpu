@@ -4,6 +4,7 @@
 #include "src/backend/raylib/camera.h"
 #include "src/test_scenes.h"
 #include "src/scene_loader.h"
+#include <argparse/argparse.hpp>
 
 
 bool isSceneChanged() {
@@ -32,18 +33,54 @@ int getConfigIndex(int configCount) {
 
 
 int main(int argc, char* argv[]) {
-    // to select preffered gpu
-    const int clPlatformIdx = 0;
-    const int clDeviceIdx = 0;
-    // window and image size
-    const int displayWidth = 1280;
-    const int displayHeight = 720;
-    const float scale = 2.0f;
-    const int imageWidth = displayWidth / scale;
-    const int imageHeight = displayHeight / scale;
-    // kernel and display timers
-    const int displayUpdatesPerSec = 30;
-    const int kernelExecsPerSec = 30; // this also acts as FPS
+    argparse::ArgumentParser parser("rt");
+    parser.add_argument("sceneFiles")
+        .help("Scene json file to load")
+        .nargs(argparse::nargs_pattern::any);
+    parser.add_argument("-w", "--displayWidth")
+        .help("Display width")
+        .default_value(1280u)
+        .scan<'u', uint32_t>();
+    parser.add_argument("-h", "--displayHeight")
+        .help("Display height")
+        .default_value(720u)
+        .scan<'u', uint32_t>();
+    parser.add_argument("-s", "--scale")
+        .help("Scaling factor for image")
+        .default_value(2.0f)
+        .scan<'f', float>();
+    parser.add_argument("-k", "--kernelExecsPerSec")
+        .help("Number of kernel executions per second (also acts like FPS)")
+        .default_value(30u)
+        .scan<'u', uint32_t>();
+    parser.add_argument("", "--clPlatformIdx")
+        .help("Index of preferred opencl platform")
+        .default_value(0u)
+        .scan<'u', uint32_t>();
+    parser.add_argument("", "--clDeviceIdx")
+        .help("Index of preferred opencl device")
+        .default_value(0u)
+        .scan<'u', uint32_t>();
+
+    try {
+        parser.parse_args(argc, argv);
+    } catch (const std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
+        std::cerr << parser;
+        exit(1);
+    }
+
+    const auto sceneFiles = parser.get<std::vector<std::string>>("sceneFiles");
+    const uint32_t displayWidth = parser.get<uint32_t>("displayWidth");
+    const uint32_t displayHeight = parser.get<uint32_t>("displayHeight");
+    const float scale = parser.get<float>("scale");
+    const uint32_t kernelExecsPerSec = parser.get<uint32_t>("kernelExecsPerSec");
+    const uint32_t clPlatformIdx = parser.get<uint32_t>("clPlatformIdx");
+    const uint32_t clDeviceIdx = parser.get<uint32_t>("clDeviceIdx");
+
+    const uint32_t textureWidth = displayWidth / scale;
+    const uint32_t textureHeight = displayHeight / scale;
+    const uint32_t displayUpdatesPerSec = 30;
 
     rl::SetTraceLogLevel(rl::LOG_WARNING);
     rl::InitWindow(displayWidth, displayHeight, "Raytracing [backend: raylib]");
@@ -62,35 +99,34 @@ int main(int argc, char* argv[]) {
     }
 
     rt::Format imgFormat = rt::Format::RGBA32F;
-    rl::Texture outTexture = rt::createTexture({imageWidth, imageHeight}, imgFormat);
-    rt::Raytracer raytracer({imageWidth, imageHeight}, clObj, imgFormat, true, clGlInterop ? outTexture.id : 0);
+    rl::Texture outTexture = rt::createTexture({textureWidth, textureHeight}, imgFormat);
+    rt::Raytracer raytracer({textureWidth, textureHeight}, clObj, imgFormat, true, clGlInterop ? outTexture.id : 0);
     rt::Renderer renderer(raytracer, {displayWidth, displayHeight}, kernelExecsPerSec, outTexture, clGlInterop);
 
-    auto camera = rt::Camera(60.0f, {imageWidth, imageHeight}, {0, 0, 6}, {0, 0, -1}, {.speed = 10.0f});
+    auto camera = rt::Camera(60.0f, {textureWidth, textureHeight}, {0, 0, 6}, {0, 0, -1}, {.speed = 10.0f});
 
     std::vector<rt::internal::Scene> scenes;
 
-    if (argc == 1) {
-        scenes = createAllScenes(clObj.context, clObj.queue);
-    } else {
-        for (int i = 1; i < argc; i++) {
+    // loading files provided by arguments
+    if (sceneFiles.size() > 0) {
+        for (const std::string& sceneFile : sceneFiles) {
             bool success;
-            auto _scene = rt::loadScene(argv[i], &success);
+            auto scene = rt::loadScene(sceneFile.c_str(), &success);
             if (success) {
-                printf("'%s' loaded successfully\n", argv[i]);
-                scenes.push_back(
-                    convert(_scene, clObj.context, clObj.queue)
-                );
+                scenes.push_back(convert(scene, clObj.context, clObj.queue));
+                printf("'%s' loaded successfully\n", sceneFile.c_str());
             } else {
-                printf("'%s' failed to load\n", argv[i]);
+                printf("'%s' failed to load\n", sceneFile.c_str());
             }
         }
+    } else {
+        // if no files are provided, create all test scenes        
+        scenes = createAllScenes(clObj.context, clObj.queue);
     }
 
-    int numScenes = scenes.size();
-    if (numScenes == 0) {
-        printf("No valid scene present\n");
-        return 1;
+    if (scenes.size() == 0) {
+        printf("Encountered problems loading files from arguments, exiting\n");
+        exit(1);
     }
 
     rt::Config configs[] = {
@@ -111,7 +147,7 @@ int main(int argc, char* argv[]) {
     while (!rl::WindowShouldClose()) {
         if (camera.update(rl::GetFrameTime()) || isSceneChanged()) {
             raytracer.resetFrameCount();
-            sceneIdx = getSceneIndex(numScenes);
+            sceneIdx = getSceneIndex(scenes.size());
             displayUpdateCount = 0;
             kernelExecCount = 0;
         }
