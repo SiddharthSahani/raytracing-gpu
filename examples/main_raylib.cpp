@@ -12,28 +12,26 @@ bool isSceneChanged() {
 }
 
 
-int getSceneIndex(int sceneCount) {
-    static int sceneIndex = 0;
-    if (rl::IsKeyDown(rl::KEY_S)) {
-        sceneIndex += rl::IsKeyPressed(rl::KEY_RIGHT);
-        sceneIndex -= rl::IsKeyPressed(rl::KEY_LEFT);
-    }
-    return ((sceneIndex % sceneCount) + sceneCount) % sceneCount;
+int getIndex(int current, int count) {
+    current += rl::IsKeyPressed(rl::KEY_RIGHT);
+    current -= rl::IsKeyPressed(rl::KEY_LEFT);
+    return ((current % count) + count) % count;
 }
 
 
-int getConfigIndex(int configCount) {
-    static int configIndex = 0;
-    if (rl::IsKeyDown(rl::KEY_C)) {
-        configIndex += rl::IsKeyPressed(rl::KEY_RIGHT);
-        configIndex -= rl::IsKeyPressed(rl::KEY_LEFT);
-    }
-    return ((configIndex % configCount) + configCount) % configCount;
-}
+struct CommandLineOptions {
+    std::vector<std::string> sceneFiles;
+    uint32_t displayWidth;
+    uint32_t displayHeight;
+    float scale;
+    uint32_t kernelExecsPerSec;
+    uint32_t clPlatformIdx;
+    uint32_t clDeviceIdx;
+};
 
 
-int main(int argc, char* argv[]) {
-    argparse::ArgumentParser parser("rt");
+CommandLineOptions parseCommandLine(int argc, char* argv[]) {
+    argparse::ArgumentParser parser("raytracing-raylib", "0.2.0");
     parser.add_argument("sceneFiles")
         .help("Scene json file to load")
         .nargs(argparse::nargs_pattern::any);
@@ -70,17 +68,58 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    const auto sceneFiles = parser.get<std::vector<std::string>>("sceneFiles");
-    const uint32_t displayWidth = parser.get<uint32_t>("displayWidth");
-    const uint32_t displayHeight = parser.get<uint32_t>("displayHeight");
-    const float scale = parser.get<float>("scale");
-    const uint32_t kernelExecsPerSec = parser.get<uint32_t>("kernelExecsPerSec");
-    const uint32_t clPlatformIdx = parser.get<uint32_t>("clPlatformIdx");
-    const uint32_t clDeviceIdx = parser.get<uint32_t>("clDeviceIdx");
+    CommandLineOptions options = {
+        .sceneFiles = parser.get<std::vector<std::string>>("sceneFiles"),
+        .displayWidth = parser.get<uint32_t>("displayWidth"),
+        .displayHeight = parser.get<uint32_t>("displayHeight"),
+        .scale = parser.get<float>("scale"),
+        .kernelExecsPerSec = parser.get<uint32_t>("kernelExecsPerSec"),
+        .clPlatformIdx = parser.get<uint32_t>("clPlatformIdx"),
+        .clDeviceIdx = parser.get<uint32_t>("clDeviceIdx")
+    };
+    return options;
+}
+
+
+std::vector<rt::Scene> loadScenes(const std::vector<std::string>& sceneFiles) {
+    std::vector<rt::Scene> scenes;
+    
+    bool success;
+    for (const std::string& sceneFile : sceneFiles) {
+        rt::Scene scene = rt::loadScene(sceneFile.c_str(), &success);
+        if (success) {
+            printf("Loaded '%s'\n", sceneFile.c_str());
+            scenes.push_back(scene);
+        } else {
+            printf("'%s' failed to load\n", sceneFile.c_str());
+        }
+    }
+
+    return scenes;
+}
+
+
+int main(int argc, char* argv[]) {
+    const CommandLineOptions options = parseCommandLine(argc, argv);
+    const std::vector<std::string>& sceneFiles = options.sceneFiles;
+    const uint32_t displayWidth = options.displayWidth;
+    const uint32_t displayHeight = options.displayHeight;
+    const float scale = options.scale;
+    const uint32_t kernelExecsPerSec = options.kernelExecsPerSec;
+    const uint32_t clPlatformIdx = options.clPlatformIdx;
+    const uint32_t clDeviceIdx = options.clDeviceIdx;
 
     const uint32_t textureWidth = displayWidth / scale;
     const uint32_t textureHeight = displayHeight / scale;
     const uint32_t displayUpdatesPerSec = 30;
+
+    bool filesProvided = sceneFiles.size() > 0;
+    std::vector<rt::Scene> _scenes = filesProvided ? loadScenes(sceneFiles) : createAllScenes();
+
+    if (_scenes.size() == 0) {
+        printf("Encountered problems loading files from arguments, exiting\n");
+        exit(1);
+    }
 
     rl::SetTraceLogLevel(rl::LOG_WARNING);
     rl::InitWindow(displayWidth, displayHeight, "Raytracing [backend: raylib]");
@@ -98,37 +137,17 @@ int main(int argc, char* argv[]) {
         clObj = rt::createClObjects(platform, device);
     }
 
+    std::vector<rt::internal::Scene> scenes;
+    for (const rt::Scene& scene : _scenes) {
+        scenes.push_back(rt::convert(scene, clObj.context, clObj.queue));
+    }
+
     rt::Format imgFormat = rt::Format::RGBA32F;
     rl::Texture outTexture = rt::createTexture({textureWidth, textureHeight}, imgFormat);
     rt::Raytracer raytracer({textureWidth, textureHeight}, clObj, imgFormat, true, clGlInterop ? outTexture.id : 0);
     rt::Renderer renderer(raytracer, {displayWidth, displayHeight}, kernelExecsPerSec, outTexture, clGlInterop);
 
     auto camera = rt::Camera(60.0f, {textureWidth, textureHeight}, {0, 0, 6}, {0, 0, -1}, {.speed = 10.0f});
-
-    std::vector<rt::internal::Scene> scenes;
-
-    // loading files provided by arguments
-    if (sceneFiles.size() > 0) {
-        for (const std::string& sceneFile : sceneFiles) {
-            bool success;
-            auto scene = rt::loadScene(sceneFile.c_str(), &success);
-            if (success) {
-                scenes.push_back(convert(scene, clObj.context, clObj.queue));
-                printf("'%s' loaded successfully\n", sceneFile.c_str());
-            } else {
-                printf("'%s' failed to load\n", sceneFile.c_str());
-            }
-        }
-    } else {
-        // if no files are provided, create all test scenes        
-        scenes = createAllScenes(clObj.context, clObj.queue);
-    }
-
-    if (scenes.size() == 0) {
-        printf("Encountered problems loading files from arguments, exiting\n");
-        exit(1);
-    }
-
     rt::Config configs[] = {
         {.sampleCount = 16, .bounceLimit = 5},
         {.sampleCount = 32, .bounceLimit = 5},
@@ -147,11 +166,13 @@ int main(int argc, char* argv[]) {
     while (!rl::WindowShouldClose()) {
         if (camera.update(rl::GetFrameTime()) || isSceneChanged()) {
             raytracer.resetFrameCount();
-            sceneIdx = getSceneIndex(scenes.size());
+            sceneIdx = getIndex(sceneIdx, scenes.size());
             displayUpdateCount = 0;
             kernelExecCount = 0;
         }
-        configIdx = getConfigIndex(sizeof(configs) / sizeof(rt::Config));
+        if (rl::IsKeyDown(rl::KEY_C)) {
+            configIdx = getIndex(configIdx, sizeof(configs) / sizeof(rt::Config));
+        }
 
         if (kernelExecCount % (kernelExecsPerSec / displayUpdatesPerSec) == 0 || isSceneChanged()) {
             displayUpdateCount++;

@@ -181,7 +181,7 @@ rt::Scene createScene_8() {
 }
 
 
-std::vector<rt::internal::Scene> createAllScenes(cl::Context context, cl::CommandQueue queue) {
+std::vector<rt::Scene> createAllScenes() {
     std::vector<rt::Scene> scenes = {
         createScene_1(),
         createScene_2(),
@@ -192,9 +192,5 @@ std::vector<rt::internal::Scene> createAllScenes(cl::Context context, cl::Comman
         createScene_7(),
         createScene_8(),
     };
-    std::vector<rt::internal::Scene> res;
-    for (const auto& scene : scenes) {
-        res.push_back(convert(scene, context, queue));
-    }
-    return res;
+    return scenes;
 }

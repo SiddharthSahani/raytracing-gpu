@@ -25,31 +25,42 @@ using namespace std::chrono;
 }
 
 
-int main(int argc, char* argv[]) {
-    argparse::ArgumentParser parser("rt");
+struct CommandLineOptions {
+    std::string sceneFile;
+    std::string outFile;
+    uint32_t imageWidth;
+    uint32_t imageHeight;
+    uint32_t sampleCount;
+    uint32_t clPlatformIdx;
+    uint32_t clDeviceIdx;
+};
+
+
+CommandLineOptions parseCommandLine(int argc, char* argv[]) {
+    argparse::ArgumentParser parser("raytracing-nogui", "0.2.0");
     parser.add_argument("sceneFile")
         .help("Scene json file to load");
-    parser.add_argument("outFile")
+    parser.add_argument("-o", "--outFile")
         .help("The output image file")
         .default_value("output.png");
-    parser.add_argument("-w", "--imageWidth").
-        help("Image width")
+    parser.add_argument("-w", "--imageWidth")
+        .help("Image width")
         .default_value(1280u)
         .scan<'u', uint32_t>();
-    parser.add_argument("-h", "--imageHeight").
-        help("Image height")
+    parser.add_argument("-h", "--imageHeight")
+        .help("Image height")
         .default_value(720u)
         .scan<'u', uint32_t>();
-    parser.add_argument("-s", "--sampleCount").
-        help("Number of samples per pixel")
+    parser.add_argument("-s", "--sampleCount")
+        .help("Number of samples per pixel")
         .default_value(1024u)
         .scan<'u', uint32_t>();
-    parser.add_argument("", "--clPlatformIdx").
-        help("Index of preferred opencl platform")
+    parser.add_argument("", "--clPlatformIdx")
+        .help("Index of preferred opencl platform")
         .default_value(0u)
         .scan<'u', uint32_t>();
-    parser.add_argument("", "--clDeviceIdx").
-        help("Index of preferred opencl device")
+    parser.add_argument("", "--clDeviceIdx")
+        .help("Index of preferred opencl device")
         .default_value(0u)
         .scan<'u', uint32_t>();
 
@@ -61,19 +72,28 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    const std::string sceneFile = parser.get<std::string>("sceneFile");
-    const std::string outFile = parser.get<std::string>("outFile");
-    const uint32_t imageWidth = parser.get<uint32_t>("imageWidth");
-    const uint32_t imageHeight = parser.get<uint32_t>("imageHeight");
-    const uint32_t sampleCount = parser.get<uint32_t>("sampleCount");
-    const uint32_t clPlatformIdx = parser.get<uint32_t>("clPlatformIdx");
-    const uint32_t clDeviceIdx = parser.get<uint32_t>("clDeviceIdx");
+    CommandLineOptions options = {
+        .sceneFile = parser.get<std::string>("sceneFile"),
+        .outFile = parser.get<std::string>("outFile"),
+        .imageWidth = parser.get<uint32_t>("imageWidth"),
+        .imageHeight = parser.get<uint32_t>("imageHeight"),
+        .sampleCount = parser.get<uint32_t>("sampleCount"),
+        .clPlatformIdx = parser.get<uint32_t>("clPlatformIdx"),
+        .clDeviceIdx = parser.get<uint32_t>("clDeviceIdx")
+    };
+    return options;
+}
 
-    cl::Platform platform = rt::getAllClPlatforms()[clPlatformIdx];
-    cl::Device device = rt::getAllClDevices(platform)[clDeviceIdx];
-    rt::CL_Objects clObj = rt::createClObjects(platform, device);
 
-    rt::Raytracer raytracer({imageWidth, imageHeight}, clObj, rt::Format::RGBA8, false);
+int main(int argc, char* argv[]) {
+    const CommandLineOptions options = parseCommandLine(argc, argv);
+    const std::string sceneFile = options.sceneFile;
+    const std::string outFile = options.outFile;
+    const uint32_t imageWidth = options.imageWidth;
+    const uint32_t imageHeight = options.imageHeight;
+    const uint32_t sampleCount = options.sampleCount;
+    const uint32_t clPlatformIdx = options.clPlatformIdx;
+    const uint32_t clDeviceIdx = options.clDeviceIdx;
 
     bool success;
     rt::Scene scene = rt::loadScene(sceneFile.c_str(), &success);
@@ -84,11 +104,15 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    cl::Platform platform = rt::getAllClPlatforms()[clPlatformIdx];
+    cl::Device device = rt::getAllClDevices(platform)[clDeviceIdx];
+    rt::CL_Objects clObj = rt::createClObjects(platform, device);
+
+    rt::Raytracer raytracer({imageWidth, imageHeight}, clObj, rt::Format::RGBA8, false);
     auto camera = rt::createCamera(60.0f, {imageWidth, imageHeight}, {0, 0, 6}, {0, 0, -1});
     auto _scene = rt::convert(scene, clObj.context, clObj.queue);
 
     RT_TIME_STMT("Time taken to compile cl prog:", raytracer.createClKernels({.sampleCount = sampleCount, .bounceLimit = 5}));
     RT_TIME_STMT("Time taken to render:", raytracer.renderScene(_scene, camera, {.sampleCount = sampleCount, .bounceLimit = 5}));
-
-    printf("Image saved: %s\n", raytracer.saveAsImage(outFile.c_str()) ? "true" : "false");
+    RT_TIME_STMT("Time taken to save image:", printf("Image saved: %s\n", raytracer.saveAsImage(outFile.c_str()) ? "true" : "false"));
 }
