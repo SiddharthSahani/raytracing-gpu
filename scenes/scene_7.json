@@ -1,0 +1,45 @@
+{
+    "objects": [
+        {
+            "type": "sphere",
+            "position": [0.0, 0.0, 0.0],
+            "radius": 1.0,
+            "matIdx": 0
+        },
+        {
+            "type": "sphere",
+            "position": [0.0, -101.0, 0.0],
+            "radius": 100.0,
+            "matIdx": 1
+        },
+        {
+            "type": "triangle",
+            "v0": [-2.0, -1.0, 2.0],
+            "v1": [-2.0, -1.0, -2.0],
+            "v2": [2.0, -0.5, -2.0] ,                      
+            "matIdx": 2
+        },
+        {
+            "type": "triangle",
+            "v0": [2.0, -0.5, -2.0],
+            "v1": [2.0, -0.5, 2.0],
+            "v2": [-2.0, -1.0, 2.0],
+            "matIdx": 2
+        }
+    ],
+    "materials": [
+        {
+            "color": [0.2, 0.6, 1.0],
+            "smoothness": 0.0
+        },
+        {
+            "color": [0.2, 0.6, 0.0],
+            "smoothness": 0.0
+        },
+        {
+            "color": [0.7, 0.7, 0.7],
+            "smoothness": 0.95
+        }
+    ],
+    "backgroundColor": [0.40, 0.72, 0.92]
+}
