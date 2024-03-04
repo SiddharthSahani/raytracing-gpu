@@ -5,6 +5,7 @@
 #include "src/raytracer.h"
 #include "src/raytracer/camera.h"
 #include "src/scene_loader.h"
+#include <argparse/argparse.hpp>
 #include <chrono>
 
 using namespace std::chrono;
@@ -25,19 +26,48 @@ using namespace std::chrono;
 
 
 int main(int argc, char* argv[]) {
-    if (argc == 1) {
-        printf("Provide scene json file as an argument\n");
-        return 1;
+    argparse::ArgumentParser parser("rt");
+    parser.add_argument("sceneFile")
+        .help("Scene json file to load");
+    parser.add_argument("outFile")
+        .help("The output image file")
+        .default_value("output.png");
+    parser.add_argument("-w", "--imageWidth").
+        help("Image width")
+        .default_value(1280u)
+        .scan<'u', uint32_t>();
+    parser.add_argument("-h", "--imageHeight").
+        help("Image height")
+        .default_value(720u)
+        .scan<'u', uint32_t>();
+    parser.add_argument("-s", "--sampleCount").
+        help("Number of samples per pixel")
+        .default_value(1024u)
+        .scan<'u', uint32_t>();
+    parser.add_argument("", "--clPlatformIdx").
+        help("Index of preferred opencl platform")
+        .default_value(0u)
+        .scan<'u', uint32_t>();
+    parser.add_argument("", "--clDeviceIdx").
+        help("Index of preferred opencl device")
+        .default_value(0u)
+        .scan<'u', uint32_t>();
+
+    try {
+        parser.parse_args(argc, argv);
+    } catch (const std::runtime_error& e) {
+        std::cerr << e.what() << std::endl;
+        std::cerr << parser;
+        exit(1);
     }
 
-    // to select preffered gpu
-    const int clPlatformIdx = 0;
-    const int clDeviceIdx = 0;
-    // window and image size
-    const int imageWidth = 1280;
-    const int imageHeight = 720;
-    // number of samples per pixel
-    const int sampleCount = 1024;
+    const std::string sceneFile = parser.get<std::string>("sceneFile");
+    const std::string outFile = parser.get<std::string>("outFile");
+    const uint32_t imageWidth = parser.get<uint32_t>("imageWidth");
+    const uint32_t imageHeight = parser.get<uint32_t>("imageHeight");
+    const uint32_t sampleCount = parser.get<uint32_t>("sampleCount");
+    const uint32_t clPlatformIdx = parser.get<uint32_t>("clPlatformIdx");
+    const uint32_t clDeviceIdx = parser.get<uint32_t>("clDeviceIdx");
 
     cl::Platform platform = rt::getAllClPlatforms()[clPlatformIdx];
     cl::Device device = rt::getAllClDevices(platform)[clDeviceIdx];
@@ -46,11 +76,11 @@ int main(int argc, char* argv[]) {
     rt::Raytracer raytracer({imageWidth, imageHeight}, clObj, rt::Format::RGBA8, false);
 
     bool success;
-    rt::Scene scene = rt::loadScene(argv[1], &success);
+    rt::Scene scene = rt::loadScene(sceneFile.c_str(), &success);
     if (success) {
-        printf("'%s' loaded successfully\n", argv[1]);
+        printf("'%s' loaded successfully\n", sceneFile.c_str());
     } else {
-        printf("'%s' failed to load\n", argv[1]);
+        printf("'%s' failed to load\n", sceneFile.c_str());
         return 1;
     }
 
@@ -60,5 +90,5 @@ int main(int argc, char* argv[]) {
     RT_TIME_STMT("Time taken to compile cl prog:", raytracer.createClKernels({.sampleCount = sampleCount, .bounceLimit = 5}));
     RT_TIME_STMT("Time taken to render:", raytracer.renderScene(_scene, camera, {.sampleCount = sampleCount, .bounceLimit = 5}));
 
-    printf("Image saved: %s\n", raytracer.saveAsImage("test.png") ? "true" : "false");
+    printf("Image saved: %s\n", raytracer.saveAsImage(outFile.c_str()) ? "true" : "false");
 }
