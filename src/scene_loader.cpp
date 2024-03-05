@@ -74,6 +74,8 @@ std::vector<std::shared_ptr<rt::internal::Material>> parseMaterials(json::JSON& 
                 float smoothness_ = smoothness.ToFloat();
                 if (smoothness_ < 0.0f || smoothness_ > 1.0f) {
                     printf("ERROR (`parseMaterials`): Material %d ::smoothness should be in range [0.0f - 1.0f]\n", matLoopIdx);
+                    materials[matLoopIdx] = defaultMaterial;
+                    continue;
                 }
             }
 
