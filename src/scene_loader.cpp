@@ -199,13 +199,13 @@ rt::Object parseTriangle(json::JSON& jsonObj, int objIdx, bool& valid) {
     {
         // is an array of size 3
         if (v0.JSONType() != JsonType::Array || v0.size() != 3) {
-            printf("ERROR (`parseSphere`): Object %d ::v0 is not an array of size 3\n", objIdx);
+            printf("ERROR (`parseTriangle`): Object %d ::v0 is not an array of size 3\n", objIdx);
             valid = false;
         }
         // each element of v0 array
         for (int i = 0; i < 3; i++) {
             if (v0[i].JSONType() != JsonType::Floating) {
-                printf("ERROR (`parseSphere`): Object %d ::v0[%d] is not a floating point number\n", objIdx, i);
+                printf("ERROR (`parseTriangle`): Object %d ::v0[%d] is not a floating point number\n", objIdx, i);
                 valid = false;
             }
         }
@@ -214,13 +214,13 @@ rt::Object parseTriangle(json::JSON& jsonObj, int objIdx, bool& valid) {
     {
         // is an array of size 3
         if (v1.JSONType() != JsonType::Array || v1.size() != 3) {
-            printf("ERROR (`parseSphere`): Object %d ::v1 is not an array of size 3\n", objIdx);
+            printf("ERROR (`parseTriangle`): Object %d ::v1 is not an array of size 3\n", objIdx);
             valid = false;
         }
         // each element of v1 array
         for (int i = 0; i < 3; i++) {
             if (v1[i].JSONType() != JsonType::Floating) {
-                printf("ERROR (`parseSphere`): Object %d ::v1[%d] is not a floating point number\n", objIdx, i);
+                printf("ERROR (`parseTriangle`): Object %d ::v1[%d] is not a floating point number\n", objIdx, i);
                 valid = false;
             }
         }
@@ -229,13 +229,13 @@ rt::Object parseTriangle(json::JSON& jsonObj, int objIdx, bool& valid) {
     {
         // is an array of size 3
         if (v2.JSONType() != JsonType::Array || v2.size() != 3) {
-            printf("ERROR (`parseSphere`): Object %d ::v2 is not an array of size 3\n", objIdx);
+            printf("ERROR (`parseTriangle`): Object %d ::v2 is not an array of size 3\n", objIdx);
             valid = false;
         }
         // each element of v2 array
         for (int i = 0; i < 3; i++) {
             if (v2[i].JSONType() != JsonType::Floating) {
-                printf("ERROR (`parseSphere`): Object %d ::v2[%d] is not a floating point number\n", objIdx, i);
+                printf("ERROR (`parseTriangle`): Object %d ::v2[%d] is not a floating point number\n", objIdx, i);
                 valid = false;
             }
         }
