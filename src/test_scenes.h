@@ -60,7 +60,7 @@ rt::Scene createScene_3() {
 
 rt::Scene createScene_4() {
     auto redMat = rt::createMaterial({1.0f, 0.3f, 0.3f}, 0.7f);
-    auto greenMat = rt::createMaterial({0.3f, 1.0f, 0.3f}, 0.0f);
+    auto greenMat = rt::createMaterial({0.0f, 1.0f, 0.0f}, 0.0f);
     auto greyMat = rt::createMaterial({0.6f, 0.6f, 0.6f}, 0.9f);
 
     auto sph1 = rt::createSphere({ 0.0f, 0.0f, -0.8f}, 0.9f, redMat);
@@ -74,7 +74,7 @@ rt::Scene createScene_4() {
     scene.objects.push_back(sph2);
     scene.objects.push_back(sph3);
     scene.objects.push_back(ground);
-    scene.backgroundColor = glm::vec3(255, 255, 255) / 255.0f;
+    scene.backgroundColor = glm::vec3(180, 180, 255) / 255.0f;
 
     return scene;
 }
