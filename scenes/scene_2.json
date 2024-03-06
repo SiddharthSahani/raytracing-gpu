@@ -1,0 +1,28 @@
+{
+    "objects": [
+        {
+            "type": "sphere",
+            "position": [0.0, 0.0, 0.0],
+            "radius": 1.0,
+            "matIdx": 0
+        },
+        {
+            "type": "triangle",
+            "v0": [-2.0, -1.0, -1.5],
+            "v1": [2.0, -1.0, -1.5],
+            "v2": [0.0, -1.0, 2.0],
+            "matIdx": 1
+        }
+    ],
+    "materials": [
+        {
+            "color": [0.0, 0.2, 0.8],
+            "smoothness": 0.0
+        },
+        {
+            "color": [0.0, 1.0, 1.0],
+            "smoothness": 1.0
+        }
+    ],
+    "backgroundColor": [0.70, 0.58, 0.78]
+}

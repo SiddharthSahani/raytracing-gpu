@@ -1,0 +1,27 @@
+{
+    "objects": [
+        {
+            "type": "sphere",
+            "position": [0.0, 0.0, 0.0],
+            "radius": 1.0,
+            "matIdx": 0
+        },
+        {
+            "type": "sphere",
+            "position": [0.0, -6.0, 0.0],
+            "radius": 5.0,
+            "matIdx": 1
+        }
+    ],
+    "materials": [
+        {
+            "color": [0.2, 0.9, 0.8],
+            "smoothness": 0.3
+        },
+        {
+            "color": [1.0, 0.0, 1.0],
+            "smoothness": 0.7
+        }
+    ],
+    "backgroundColor": [0.82, 0.82, 0.90]
+}
