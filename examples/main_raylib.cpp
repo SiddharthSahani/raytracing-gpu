@@ -48,7 +48,7 @@ CommandLineOptions parseCommandLine(int argc, char* argv[]) {
         .default_value(2.0f)
         .scan<'f', float>();
     parser.add_argument("-k", "--kernelExecsPerSec")
-        .help("Number of kernel executions per second (also acts like FPS)")
+        .help("Number of kernel executions per second (also acts like FPS, minimum 30)")
         .default_value(30u)
         .scan<'u', uint32_t>();
     parser.add_argument("", "--clPlatformIdx")
@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
     const uint32_t displayWidth = options.displayWidth;
     const uint32_t displayHeight = options.displayHeight;
     const float scale = options.scale;
-    const uint32_t kernelExecsPerSec = options.kernelExecsPerSec;
+    const uint32_t kernelExecsPerSec = options.kernelExecsPerSec < 30 ? 30 : options.kernelExecsPerSec;
     const uint32_t clPlatformIdx = options.clPlatformIdx;
     const uint32_t clDeviceIdx = options.clDeviceIdx;
 
