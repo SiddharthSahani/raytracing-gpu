@@ -1,0 +1,43 @@
+{
+    "objects": [
+        {
+            "type": "sphere",
+            "position": [0.0, 0.0, -0.8],
+            "radius": 0.9,
+            "matIdx": 0
+        },
+        {
+            "type": "sphere",
+            "position": [-2.0, 0.0, 0.0],
+            "radius": 0.7,
+            "matIdx": 2
+        },
+        {
+            "type": "sphere",
+            "position": [2.0, 0.0, 0.0],
+            "radius": 0.7,
+            "matIdx": 2
+        },
+        {
+            "type": "sphere",
+            "position": [0.0, -101.0, 0.0],
+            "radius": 100.0,
+            "matIdx": 1
+        }
+    ],
+    "materials": [
+        {
+            "color": [1.0, 0.3, 0.3],
+            "smoothness": 0.7
+        },
+        {
+            "color": [0.0, 1.0, 0.0],
+            "smoothness": 0.0
+        },
+        {
+            "color": [0.6, 0.6, 0.6],
+            "smoothness": 0.9
+        }
+    ],
+    "backgroundColor": [0.8, 0.8, 1.0]
+}
