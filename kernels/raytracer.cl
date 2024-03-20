@@ -31,11 +31,11 @@ rt_HitRecord traceRay(const rt_Ray* ray, const rt_SceneParams* scene, global con
 }
 
 
-float3 perPixel(rt_Ray ray, const rt_SceneParams* scene, global const rt_Object* objects, global const rt_Material* materials, uint* rngSeed) {
+float3 perPixel(rt_Ray ray, const rt_SceneParams* scene, global const rt_Object* objects, global const rt_Material* materials, uint* rngSeed, uint maxBounces) {
     float3 light = {0.0f, 0.0f, 0.0f};
     float3 contribution = {1.0f, 1.0f, 1.0f};
 
-    for (int i = 0; i < CONFIG__BOUNCE_LIMIT; i++) {
+    for (int i = 0; i < maxBounces; i++) {
         rngSeed += i * i * i;
         rt_HitRecord record = traceRay(&ray, scene, objects);
 
@@ -60,11 +60,18 @@ float3 perPixel(rt_Ray ray, const rt_SceneParams* scene, global const rt_Object*
 
 
 kernel void raytraceScene(
+    // Camera
     const rt_Camera camera,
+    // Scene Info
     const rt_SceneParams scene,
     global const rt_Object* objects,
     global const rt_Material* materials,
+    // Random number generation
     uint initialRngSeed,
+    // Config
+    uint sampleCount,
+    uint maxBounces,
+    // Out texture
     write_only image2d_t out
 ) {
     uint pixelIndex = get_global_id(0);
@@ -75,11 +82,11 @@ kernel void raytraceScene(
 
     rt_Ray ray = getRay(&camera, pixelIndex);
 
-    for (int frameIndex = 0; frameIndex < CONFIG__SAMPLE_COUNT; frameIndex++) {
+    for (int frameIndex = 0; frameIndex < sampleCount; frameIndex++) {
         rngSeed += frameIndex * 32421;
-        accumulatedFrameColor += perPixel(ray, &scene, objects, materials, &rngSeed);
+        accumulatedFrameColor += perPixel(ray, &scene, objects, materials, &rngSeed, maxBounces);
     }
-    accumulatedFrameColor = accumulatedFrameColor / CONFIG__SAMPLE_COUNT;
+    accumulatedFrameColor = accumulatedFrameColor / sampleCount;
 
     int2 imgCoords = {pixelIndex % camera.imageSize.x, pixelIndex / camera.imageSize.x};
     float4 imgColor = {accumulatedFrameColor.xyz, 1.0f};

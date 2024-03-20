@@ -46,39 +46,36 @@ Raytracer::Raytracer(glm::ivec2 imageShape, CL_Objects clObjects, Format format,
     m_allowAccumulation = allowAccumulation;
     m_clGlInterop = glTextureId != 0;
 
+    if (m_format == Format::RGBA8 && m_allowAccumulation) {
+        printf("WARN: Using RGBA8 format with accumulation gives bad results\n");
+    }
+
     if (m_clGlInterop) {
         createImageBuffers(glTextureId);
     } else {
         createImageBuffers();
     }
-
-    if (m_format == Format::RGBA8 && m_allowAccumulation) {
-        printf("WARN: Using RGBA8 format with accumulation gives bad results\n");
-    }
+    createClPrograms();
 }
 
 
 void Raytracer::renderScene(const internal::Scene& scene, const internal::Camera& camera, const Config& config) {
-    if (m_kernels.count(config) == 0) {
-        createClKernels(config);
-    }
+    m_raytracerKernel.setArg(0, sizeof(internal::Camera), &camera);
+    m_raytracerKernel.setArg(1, sizeof(internal::SceneExtra), &scene.extra);
+    m_raytracerKernel.setArg(2, scene.objectsBuffer);
+    m_raytracerKernel.setArg(3, scene.materialsBuffer);
+    m_raytracerKernel.setArg(4, sizeof(uint32_t), &m_frameCount);
+    m_raytracerKernel.setArg(5, sizeof(uint32_t), &config.sampleCount);
+    m_raytracerKernel.setArg(6, sizeof(uint32_t), &config.bounceLimit);
 
-    cl::Kernel raytracerKernel = m_kernels[config];
-
-    raytracerKernel.setArg(0, sizeof(internal::Camera), &camera);
-    raytracerKernel.setArg(1, sizeof(internal::SceneExtra), &scene.extra);
-    raytracerKernel.setArg(2, scene.objectsBuffer);
-    raytracerKernel.setArg(3, scene.materialsBuffer);
-    raytracerKernel.setArg(4, sizeof(uint32_t), &m_frameCount);
-    
     if (m_clGlInterop && !m_allowAccumulation) {
-        raytracerKernel.setArg(5, m_frameImageGl);
+        m_raytracerKernel.setArg(7, m_frameImageGl);
     } else {
-        raytracerKernel.setArg(5, m_frameImage);
+        m_raytracerKernel.setArg(7, m_frameImage);
     }
 
     m_clObjects.queue.enqueueNDRangeKernel(
-        raytracerKernel,
+        m_raytracerKernel,
         cl::NullRange,
         cl::NDRange(m_imageShape.x * m_imageShape.y),
         cl::NullRange
@@ -224,7 +221,7 @@ void Raytracer::createImageBuffers(uint32_t glTextureId) {
 }
 
 
-void Raytracer::createClKernels(const rt::Config& config) {
+void Raytracer::createClPrograms() {
     std::string raytracerFileSource = readFile("kernels/raytracer.cl");
     std::string accumulatorFileSource = readFile("kernels/accumulator.cl");
 
@@ -236,8 +233,8 @@ void Raytracer::createClKernels(const rt::Config& config) {
     cl::Program raytracerProgram = cl::Program(raytracerFileSource);
     cl::Program accumulatorProgram = cl::Program(accumulatorFileSource);
 
-    std::string buildFlags = makeClProgramsBuildFlags(config);
-    printf("INFO (`createClKernels`): (Re)building Cl Programs with flags: %s\n", buildFlags.c_str());
+    std::string buildFlags = makeClProgramsBuildFlags();
+    printf("INFO (`createClKernels`): Building Cl Programs with flags: %s\n", buildFlags.c_str());
 
     if (raytracerProgram.build(buildFlags.c_str()) || accumulatorProgram.build(buildFlags.c_str())) {
         printf("ERROR (`createClKernels`): Encountered error while building Cl programs\n");
@@ -248,19 +245,14 @@ void Raytracer::createClKernels(const rt::Config& config) {
         printf("Build log for accumulator:\n%s\n", accumulatorBuildLog.c_str());
     } else {
         printf("INFO (`createClKernels`): Built Cl programs successfully\n");
-        m_kernels[config] = cl::Kernel(raytracerProgram, "raytraceScene");
+        m_raytracerKernel = cl::Kernel(raytracerProgram, "raytraceScene");
         m_accumulatorKernel = cl::Kernel(accumulatorProgram, "accumulateFrameData");
     }
 }
 
 
-std::string Raytracer::makeClProgramsBuildFlags(const rt::Config& config) const {
-    std::stringstream stream;
-
-    stream << " -DCONFIG__SAMPLE_COUNT=" << config.sampleCount;
-    stream << " -DCONFIG__BOUNCE_LIMIT=" << config.bounceLimit;
-
-    return stream.str();
+std::string Raytracer::makeClProgramsBuildFlags() const {
+    return "";
 }
 
 }

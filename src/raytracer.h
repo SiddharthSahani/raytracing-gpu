@@ -43,12 +43,12 @@ class Raytracer {
         const glm::ivec2& getImageShape() const { return m_imageShape; }
         uint32_t getFrameCount() const { return m_frameCount; }
         uint32_t getPixelBufferSize() const;
-        void createClKernels(const rt::Config& config);
 
     private:
         void createImageBuffers();
         void createImageBuffers(uint32_t glTextureId);
-        std::string makeClProgramsBuildFlags(const rt::Config& config) const;
+        void createClPrograms();
+        std::string makeClProgramsBuildFlags() const;
 
     private:
         glm::ivec2 m_imageShape;
@@ -58,7 +58,7 @@ class Raytracer {
         bool m_clGlInterop;
         uint32_t m_frameCount = 1;
 
-        std::map<Config, cl::Kernel> m_kernels;
+        cl::Kernel m_raytracerKernel;
         cl::Kernel m_accumulatorKernel;
 
         cl::Image2D m_frameImage;

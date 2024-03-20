@@ -99,6 +99,7 @@ int main(int argc, char* argv[]) {
     rt::Scene scene = rt::loadScene(sceneFile.c_str(), &success);
     if (success) {
         printf("'%s' loaded successfully\n", sceneFile.c_str());
+        printf("Number of objects in scene: %d\n", scene.objects.size());
     } else {
         printf("'%s' failed to load\n", sceneFile.c_str());
         return 1;
@@ -112,7 +113,6 @@ int main(int argc, char* argv[]) {
     auto camera = rt::createCamera(60.0f, {imageWidth, imageHeight}, {0, 0, 6}, {0, 0, -1});
     auto _scene = rt::convert(scene, clObj.context, clObj.queue);
 
-    RT_TIME_STMT("Time taken to compile cl prog:", raytracer.createClKernels({.sampleCount = sampleCount, .bounceLimit = 5}));
     RT_TIME_STMT("Time taken to render:", raytracer.renderScene(_scene, camera, {.sampleCount = sampleCount, .bounceLimit = 5}));
     RT_TIME_STMT("Time taken to save image:", printf("Image saved: %s\n", raytracer.saveAsImage(outFile.c_str()) ? "true" : "false"));
 }

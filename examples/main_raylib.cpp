@@ -154,10 +154,6 @@ int main(int argc, char* argv[]) {
         {.sampleCount =  4, .bounceLimit = 5},
     };
 
-    for (int i = 0; i < sizeof(configs) / sizeof(rt::Config); i++) {
-        raytracer.createClKernels(configs[i]);
-    }
-
     int sceneIdx = 0;
     int configIdx = 0;
     int displayUpdateCount = 0;
