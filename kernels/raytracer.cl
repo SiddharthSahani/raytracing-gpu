@@ -31,11 +31,12 @@ rt_HitRecord traceRay(const rt_Ray* ray, const rt_SceneParams* scene, global con
 }
 
 
-float3 perPixel(rt_Ray ray, const rt_SceneParams* scene, global const rt_Object* objects, global const rt_Material* materials, uint* rngSeed, uint maxBounces) {
+float3 perPixel(rt_Ray ray, const rt_SceneParams* scene, global const rt_Object* objects, global const rt_Material* materials, uint* rngSeed, uint maxBounces, uint* bounces) {
     float3 light = {0.0f, 0.0f, 0.0f};
     float3 contribution = {1.0f, 1.0f, 1.0f};
 
-    for (int i = 0; i < maxBounces; i++) {
+    uint i;
+    for (i = 0; i < maxBounces; i++) {
         rngSeed += i * i * i;
         rt_HitRecord record = traceRay(&ray, scene, objects);
 
@@ -55,6 +56,7 @@ float3 perPixel(rt_Ray ray, const rt_SceneParams* scene, global const rt_Object*
         ray.direction = normalize(mix(diffuseDir, specularDir, material->smoothness));
     }
 
+    *bounces += i;
     return light;
 }
 
@@ -72,23 +74,28 @@ kernel void raytraceScene(
     uint sampleCount,
     uint maxBounces,
     // Out texture
-    write_only image2d_t out
+    write_only image2d_t out,
+    // Bounce Height Map
+    write_only image2d_t bounceImage
 ) {
     uint pixelIndex = get_global_id(0);
 
     uint rngSeed = (pixelIndex + 1) * initialRngSeed;
-
-    float3 accumulatedFrameColor = {0.0f, 0.0f, 0.0f};
+    uint bounces = 0;
 
     rt_Ray ray = getRay(&camera, pixelIndex);
 
+    float3 accumulatedFrameColor = {0.0f, 0.0f, 0.0f};
+
     for (int frameIndex = 0; frameIndex < sampleCount; frameIndex++) {
         rngSeed += frameIndex * 32421;
-        accumulatedFrameColor += perPixel(ray, &scene, objects, materials, &rngSeed, maxBounces);
+        accumulatedFrameColor += perPixel(ray, &scene, objects, materials, &rngSeed, maxBounces, &bounces);
     }
     accumulatedFrameColor = accumulatedFrameColor / sampleCount;
 
     int2 imgCoords = {pixelIndex % camera.imageSize.x, pixelIndex / camera.imageSize.x};
     float4 imgColor = {accumulatedFrameColor.xyz, 1.0f};
     write_imagef(out, imgCoords, imgColor);
+
+    write_imagef(bounceImage, imgCoords, (float4) bounces / (sampleCount * maxBounces));
 }

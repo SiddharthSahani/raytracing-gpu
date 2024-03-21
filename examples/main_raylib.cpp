@@ -161,13 +161,17 @@ int main(int argc, char* argv[]) {
 
     while (!rl::WindowShouldClose()) {
         if (camera.update(rl::GetFrameTime()) || isSceneChanged()) {
-            raytracer.resetFrameCount();
+            raytracer.reset();
             sceneIdx = getIndex(sceneIdx, scenes.size());
             displayUpdateCount = 0;
             kernelExecCount = 0;
         }
         if (rl::IsKeyDown(rl::KEY_C)) {
             configIdx = getIndex(configIdx, sizeof(configs) / sizeof(rt::Config));
+        }
+
+        if (rl::IsKeyDown(rl::KEY_SPACE) && rl::IsKeyPressed(rl::KEY_B)) {
+            printf("Bounce Height Image saved: %s\n", raytracer.saveBounceHeightImage("bounceMap.png") ? "true" : "false");
         }
 
         if (kernelExecCount % (kernelExecsPerSec / displayUpdatesPerSec) == 0 || isSceneChanged()) {

@@ -115,4 +115,5 @@ int main(int argc, char* argv[]) {
 
     RT_TIME_STMT("Time taken to render:", raytracer.renderScene(_scene, camera, {.sampleCount = sampleCount, .bounceLimit = 5}));
     RT_TIME_STMT("Time taken to save image:", printf("Image saved: %s\n", raytracer.saveAsImage(outFile.c_str()) ? "true" : "false"));
+    RT_TIME_STMT("Time taken to save bounce image:", printf("Bounce image saved: %s\n", raytracer.saveBounceHeightImage("bounceMap.png") ? "true" : "false"));
 }

@@ -63,6 +63,7 @@ void Raytracer::renderScene(const internal::Scene& scene, const internal::Camera
     m_raytracerKernel.setArg(4, sizeof(uint32_t), &m_frameCount);
     m_raytracerKernel.setArg(5, sizeof(uint32_t), &config.sampleCount);
     m_raytracerKernel.setArg(6, sizeof(uint32_t), &config.bounceLimit);
+    m_raytracerKernel.setArg(8, m_bounceHeightImage);
 
     if (m_clGlInterop && !m_allowAccumulation) {
         m_raytracerKernel.setArg(7, m_frameImageGl);
@@ -139,6 +140,26 @@ bool Raytracer::saveAsImage(const char* filepath) const {
 }
 
 
+bool Raytracer::saveBounceHeightImage(const char* filepath) const {
+    uint8_t* imageBuffer = new uint8_t[m_imageShape.x * m_imageShape.y];
+    cl::size_t<3> region;
+    region[0] = m_imageShape.x;
+    region[1] = m_imageShape.y;
+    region[2] = 1;
+
+    m_clObjects.queue.enqueueReadImage(m_bounceHeightImage, true, cl::size_t<3>(), region, 0, 0, imageBuffer);
+    bool res = stbi_write_png(filepath, m_imageShape.x, m_imageShape.y, 1, imageBuffer, 0);
+    delete[] imageBuffer;
+    return res;
+}
+
+
+void Raytracer::reset() {
+    m_frameCount = 1;
+    m_clObjects.queue.enqueueWriteImage(m_bounceHeightImage, true, cl::size_t<3>(), cl::size_t<3>(), 0, 0, nullptr);
+}
+
+
 uint32_t Raytracer::getImageSize() const {
     uint32_t numPixels = m_imageShape.x * m_imageShape.y;
     switch (m_format) {
@@ -203,6 +224,20 @@ void Raytracer::createAccumImage(uint32_t glTextureId) {
 }
 
 
+void Raytracer::createBounceHeightImage() {
+    cl::ImageFormat format(CL_R, CL_UNORM_INT8);
+    float imageSizeMB = (float) (m_imageShape.x * m_imageShape.y) / (1024 * 1024);
+    int err;
+
+    m_bounceHeightImage = cl::Image2D(m_clObjects.context, CL_MEM_READ_WRITE, format, m_imageShape.x, m_imageShape.y, 0, nullptr, &err);
+    if (err) {
+        printf("ERROR (`Raytracer::createBounceHeightImage`): Unable to allocate %.3f MB for m_bounceHeightImage\n", imageSizeMB);
+    } else {
+        printf("INFO (`Raytracer::createBounceHeightImage`): Allocated %.3f MB for m_bounceHeightImage\n", imageSizeMB);
+    }
+}
+
+
 void Raytracer::createImageBuffers(uint32_t glTextureId) {
     if (glTextureId == 0) {
         createFrameImage(0);
@@ -217,6 +252,8 @@ void Raytracer::createImageBuffers(uint32_t glTextureId) {
             createFrameImage(glTextureId);
         }
     }
+
+    createBounceHeightImage();
 }
 
 

@@ -35,7 +35,8 @@ class Raytracer {
         void accumulatePixels();
         void readPixels(void* outBuffer) const;
         bool saveAsImage(const char* filepath) const;
-        void resetFrameCount() { m_frameCount = 1; }
+        bool saveBounceHeightImage(const char* filepath) const;
+        void reset();
 
         const CL_Objects& getCl() const { return m_clObjects; }
         Format getPixelFormat() const { return m_format; }
@@ -47,6 +48,7 @@ class Raytracer {
     private:
         void createFrameImage(uint32_t glTextureId);
         void createAccumImage(uint32_t glTextureId);
+        void createBounceHeightImage();
         void createImageBuffers(uint32_t glTextureId);
         void createClPrograms();
         std::string makeClProgramsBuildFlags() const;
@@ -68,6 +70,8 @@ class Raytracer {
         // one of them will be used if clgl interop is present
         cl::ImageGL m_frameImageGl;
         cl::ImageGL m_accumImageGl;
+
+        cl::Image2D m_bounceHeightImage;
 
 };
 
