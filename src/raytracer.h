@@ -32,9 +32,9 @@ class Raytracer {
     public:
         Raytracer(glm::ivec2 imageShape, CL_Objects clObjects, Format format, bool allowAccumulation, uint32_t glTextureId = 0);
         void renderScene(const internal::Scene& scene, const internal::Camera& camera, const Config& config);
+        void accumulatePixels();
         void readPixels(void* outBuffer) const;
         bool saveAsImage(const char* filepath) const;
-        void accumulatePixels();
         void resetFrameCount() { m_frameCount = 1; }
 
         const CL_Objects& getCl() const { return m_clObjects; }
@@ -42,10 +42,11 @@ class Raytracer {
         bool allowsAccumulation() const { return m_allowAccumulation; }
         const glm::ivec2& getImageShape() const { return m_imageShape; }
         uint32_t getFrameCount() const { return m_frameCount; }
-        uint32_t getPixelBufferSize() const;
+        uint32_t getImageSize() const;
 
     private:
-        void createImageBuffers();
+        void createFrameImage(uint32_t glTextureId);
+        void createAccumImage(uint32_t glTextureId);
         void createImageBuffers(uint32_t glTextureId);
         void createClPrograms();
         std::string makeClProgramsBuildFlags() const;

@@ -47,14 +47,14 @@ static internal::Scene convert(const Scene& scene, cl::Context clContext, cl::Co
     cl::Buffer materialsBuffer = cl::Buffer(clContext, CL_MEM_READ_ONLY, materialsBufferSize, nullptr, &err);
 
     if (err) {
-        printf("ERROR: Unable to allocate buffers for [size: %.3f KB]\n", (float) sceneBufferSize / 1024);
+        printf("ERROR: Unable to allocate buffers of size: %.3f KB\n", (float) sceneBufferSize / 1024);
         internal::Scene scene;
         scene.extra.numObjects = 0;
         scene.extra.backgroundColor = {1.0f, 0.0f, 0.0f, 1.0f};
         return scene;
     }
 
-    printf("INFO: Allocated buffers for [size %.3f KB]\n", (float) sceneBufferSize / 1024);
+    printf("INFO: Allocated buffers of size %.3f KB\n", (float) sceneBufferSize / 1024);
 
     std::vector<internal::Object> internalObjects(scene.objects.size());
     std::vector<internal::Material> materials(uniqueMaterials.size());
@@ -65,6 +65,7 @@ static internal::Scene convert(const Scene& scene, cl::Context clContext, cl::Co
     for (int i = 0; i < materials.size(); i++) {
         materials[i] = *uniqueMaterials[i];
     }
+
     clQueue.enqueueWriteBuffer(objectsBuffer, true, 0, objectsBufferSize, internalObjects.data());
     clQueue.enqueueWriteBuffer(materialsBuffer, true, 0, materialsBufferSize, materials.data());
 

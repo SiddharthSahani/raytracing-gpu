@@ -36,7 +36,7 @@ Renderer::Renderer(const Raytracer& raytracer, glm::ivec2 windowSize, int target
     if (m_clglInterop) {
         m_outBuffer = nullptr;
     } else {
-        uint32_t bufferSize = m_raytracer.getPixelBufferSize();
+        uint32_t bufferSize = m_raytracer.getImageSize();
         m_outBuffer = new uint8_t[bufferSize];
     }
 }
